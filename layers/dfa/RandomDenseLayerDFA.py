@@ -82,8 +82,8 @@ class Network(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        x = RandomDenseLinearDFAHidden(3,2,2)(x)
-        x = RandomDenseLinearDFAOutput(2)(x)
+        x = RandomDenseLinearDFAHidden(3,2,2, nn.sigmoid)(x)
+        x = RandomDenseLinearDFAOutput(2, nn.sigmoid)(x)
         return x
 
 model = Network()
@@ -103,7 +103,7 @@ a_1 = params["params"]["RandomDenseLinearDFAHidden_0"]["Dense_0"]["kernel"].T @ 
 print(a_1)
 
 print("h_1")
-h_1 = nn.relu(a_1)
+h_1 = nn.sigmoid(a_1)
 print(h_1)
 
 print("a_2")
@@ -111,7 +111,7 @@ a_2 = params["params"]["RandomDenseLinearDFAOutput_0"]["Dense_0"]["kernel"].T @ 
 print(a_2)
 
 print("h_2")
-h_2 = nn.relu(a_2)
+h_2 = nn.sigmoid(a_2)
 print(h_2)
 
 assert jnp.allclose(h_2, y)
@@ -125,15 +125,19 @@ print(delta_params)
 print("DELTA X")
 print(delta_x)
 
-print("dW_2")
-print(jnp.outer(h_1, jnp.ones((2,))))
-
 #define a function that computer^s derivative of relu
 def relu_derivative(x):
     return jnp.where(x > 0, 1, 0)
 
+#define a function that computes derivative of sigmoid
+def sigmoid_derivative(x):
+    return jnp.exp(-x) / (1 + jnp.exp(-x))**2
+
+print("dW_2")
+print(jnp.outer(h_1,jnp.ones((2,))*sigmoid_derivative(a_2)))
+
 print("dW_1")
-print(jnp.outer((params["params"]["RandomDenseLinearDFAHidden_0"]["B"] @ jnp.ones((2,)) * relu_derivative(a_1)) , x))
+print(jnp.outer(x,(params["params"]["RandomDenseLinearDFAHidden_0"]["B"] @ jnp.ones((2,)) * sigmoid_derivative(a_1))))
 
 
 

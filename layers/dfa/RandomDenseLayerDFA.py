@@ -80,7 +80,6 @@ print(params["params"]["B"]@jnp.array([1,1,1]))
 """
 
 
-
 z = False
 
 if(z): #do everything for sigmoid

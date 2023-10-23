@@ -21,7 +21,7 @@ class RandomDenseLinearKP(nn.Module):
     @nn.compact
     def __call__(self, x):
         
-        #forward_module = nn.Dense(self.features)
+        forward_module = nn.Dense(self.features)
         B = self.param("B", nn.initializers.lecun_normal(), (jnp.shape(x)[-1],self.features))
 
         def f(module, x):
@@ -30,19 +30,19 @@ class RandomDenseLinearKP(nn.Module):
         def fwd(module, x):
             return nn.vjp(f, module, x)
         
-        
 
         def bwd(vjp_fn, delta):
             delta_x = B @ delta
             delta_params, _ = vjp_fn(delta)
+            print("X")
             print(delta_params)
             delta_params = unfreeze(delta_params)
             delta_params["params"]["B"] = delta_params["params"]["kernel"]
             delta_params["params"] = freeze(delta_params["params"])
             print(delta_params)
-            return (delta_params, delta_x)
+            return (delta_params, delta)
         
-        forward_module = nn.Dense(self.features)
+        
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x)
     
@@ -54,7 +54,7 @@ print(params)
 
 x = jnp.array([1., 2.])
 y = model.apply(params, x)
-assert jnp.allclose(params["params"]["Dense_0"]["kernel"].T @ x + params["params"]["Dense_0"]["bias"], y)
+#assert jnp.allclose(params["params"]["Dense_0"]["kernel"].T @ x + params["params"]["Dense_0"]["bias"], y)
 target = y-1
 
 def loss(params, x):

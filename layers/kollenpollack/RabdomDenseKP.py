@@ -23,6 +23,7 @@ class RandomDenseLinearKP(nn.Module):
         
         forward_module = nn.Dense(self.features)
         B = self.param("B", nn.initializers.lecun_normal(), (jnp.shape(x)[-1],self.features))
+        
 
         def f(module, x):
             return module(x)
@@ -40,7 +41,7 @@ class RandomDenseLinearKP(nn.Module):
             delta_params["params"]["B"] = delta_params["params"]["kernel"]
             delta_params["params"] = freeze(delta_params["params"])
             print(delta_params)
-            return (delta_params, delta)
+            return (delta_params, delta_x)
         
         
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)

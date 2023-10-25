@@ -145,11 +145,11 @@ class BioNeuralNetwork(nn.Module):
     ...
     Attributes
     __________
-    features : int 
-        number of output features
     hidden_layers : [int]
         list of hidden layer dimensions
     activations : [str]
+    features : int 
+        number of output features
         list of activation functions for hidden layers
     mode : str
         mode of the network, either "bp" for backpropagation, "fa" for feedback alignment, 
@@ -186,7 +186,18 @@ class BioNeuralNetwork(nn.Module):
             x = RandomDenseLinearKP(self.features)(x)
         return x
     
-# model = BioNeuralNetwork(hidden_layers=[40, 40], activations=["relu", "relu"],mode = "kp")
-# params = model.init(jax.random.PRNGKey(0), jnp.ones((2,)))
-# y = model.apply(params, jnp.ones((2,)))
-# print(y)
+
+# vmap to parallelize across a batch of input sequences
+BatchBioNeuralNetwork = nn.vmap(
+    BioNeuralNetwork,
+    in_axes=0,
+    out_axes=0,
+    variable_axes={'params': None},
+    split_rngs={'params': False},
+    axis_name='batch',
+    )
+    
+model = BatchBioNeuralNetwork(hidden_layers=[40, 40], activations=["relu", "relu"],mode = "kp")
+params = model.init(jax.random.PRNGKey(0), jnp.ones((2,)))
+y = model.apply(params, jnp.ones((2,)))
+print(y)

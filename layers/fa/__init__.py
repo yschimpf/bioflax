@@ -109,7 +109,7 @@ class RegressionDataLoader:
         return self.size
     
 
-    @partial(jax.jit, static_argnums=(5, 6, 7))
+@jax.jit
 def train_step(state, rng, inputs, labels, masks, model, norm, classification=True):
     """Performs a single training step given a batch of data"""
 
@@ -127,7 +127,7 @@ def train_step(state, rng, inputs, labels, masks, model, norm, classification=Tr
 
     if norm in ["batch"]:
         state = state.apply_gradients(grads=grads, batch_stats=vars["batch_stats"])
-    else:
+    else
         state = state.apply_gradients(grads=grads)
 
     return state, loss

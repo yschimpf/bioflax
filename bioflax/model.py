@@ -140,4 +140,53 @@ class RandomDenseLinearDFAHidden(nn.Module):
 
 
 class BioNeuralNetwork(nn.Module):
-    (idee loop over layers)
+    """
+    Creates a neural network with bio-inspired layers according to selected mode.
+    ...
+    Attributes
+    __________
+    features : int 
+        number of output features
+    hidden_layers : [int]
+        list of hidden layer dimensions
+    activations : [str]
+        list of activation functions for hidden layers
+    mode : str
+        mode of the network, either "bp" for backpropagation, "fa" for feedback alignment, 
+        "dfa" for direct feedback alignment, or "kp" for kollen-pollack
+    """
+
+    hidden_layers : [int]
+    activations : [str]
+    features : int = 4
+    mode : str = "bp"
+
+    @nn.jit
+    @nn.compact
+    def __call__(self, x):
+        for features,activation in zip(self.hidden_layers,self.activations):
+            if self.mode == "bp":
+                x = nn.Dense(features)(x)
+                x = getattr(nn, activation)(x)
+            elif self.mode == "fa":
+                x = RandomDenseLinearFA(features)(x)
+                x = getattr(nn, activation)(x)
+            elif self.mode == "dfa":
+                x = RandomDenseLinearDFAHidden(features, self.features, getattr(nn, activation))(x)
+            elif self.mode == "kp":
+                x = RandomDenseLinearKP(features)(x)
+                x = getattr(nn, activation)(x)
+        if self.mode == "bp":
+            x = nn.Dense(self.features)(x)
+        elif self.mode == "fa":
+            x = RandomDenseLinearFA(self.features)(x)
+        elif self.mode == "dfa":
+            x = RandomDenseLinearDFAOutput(self.features)(x)
+        elif self.mode == "kp":
+            x = RandomDenseLinearKP(self.features)(x)
+        return x
+    
+# model = BioNeuralNetwork(hidden_layers=[40, 40], activations=["relu", "relu"],mode = "kp")
+# params = model.init(jax.random.PRNGKey(0), jnp.ones((2,)))
+# y = model.apply(params, jnp.ones((2,)))
+# print(y)

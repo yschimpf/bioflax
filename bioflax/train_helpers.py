@@ -11,7 +11,7 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     """
     Initializes the training state using optax
     ...
-    Attributes
+    Parameters
     __________
     model : Any
         model to be trained
@@ -36,6 +36,20 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
 def train_epoch(state, model, trainloader, seq_len, in_dim, norm, loss_function):
     """
     Training function for an epoch that loops over batches.
+    ...
+    Parameters
+    __________
+    state : TrainState
+        current train state of the model
+    model : BioBeuralNetwork
+        model that is trained
+    seq_len : int
+        length of a single input
+    in_dim
+        dimensionality of a single input
+    norm : -- HAVE TO LOOK UP --
+    loss_function: str
+        identifier to select loss function
     """
     batch_losses = []
 
@@ -48,6 +62,18 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, norm, loss_function)
     return state, jnp.mean(jnp.array(batch_losses))
 
 def get_loss(loss_function, logits, labels):
+    """
+    Returns the loss for network outputs and labels
+    ...
+    Parameters
+    __________
+    loss_function : str
+        identifier that slects the correct loss function
+    logits : -- have to look up --
+        outputs of the network for the batch
+    labels : -- have to look up --
+        labels for the batch
+    """
     if(loss_function == "CE"):
         return optax.softmax_cross_entropy_with_logits(logits=logits, labels=labels).mean()
 
@@ -55,7 +81,7 @@ def prep_batch(batch, seq_len, in_dim):
     """
     Prepares a batch of data for training.
     ...
-    Attributes
+    Parameters
     __________
     batch : tuple
         batch of data

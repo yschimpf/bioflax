@@ -83,9 +83,8 @@ def train(): #(args):
     print(f"[*] Starting training on mnist =>> Initializing...") # `{args.dataset}` =>> Initializing...")
 
     # Initialize model
-    model = partial(
-        BatchBioNeuralNetwork,
-        hidden_layers=["40", "40"], #args.hidden_layers,
+    model = BatchBioNeuralNetwork(
+        hidden_layers=[40, 40], #args.hidden_layers,
         activations=["relu", "relu"], #args.activations,
         features = output_features,
         mode="bp", #args.mode,
@@ -101,110 +100,112 @@ def train(): #(args):
         seq_len = seq_len,
     )
 
-    # Training Loop over epochs
-    # best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
-    # steps_per_epoch = int(train_size / args.batch_size)
-    # for epoch in range(args.epochs):
-    #     print(f"[*] Starting Training Epoch {epoch + 1}...")
-        
-    #     state, train_loss = train_epoch(
-    #         state, model, trainloader, seq_len, in_dim, args.norm, loss_fun
-    #     )
-
-    #     # HERE 25.10.2023 BZW. ich glaube es könnte hier wirklich besser sein hier vorerst mit 
-    #     # den training loops von dem quickstart tutorial zu arbeiten. wäre wichtiger das bis 
-    #     # abfahrt auf mnist zum laufen zu bringen. dementsprechend dann auch die datalaoder anpassen
-
-    #     if valloader is not None:
-    #         print(f"[*] Running Epoch {epoch + 1} Validation...")
-    #         val_loss, val_acc = validate(state, model_cls, valloader, seq_len, in_dim, args.norm)
-
-    #         print(f"[*] Running Epoch {epoch + 1} Test...")
-    #         test_loss, test_acc = validate(state, model_cls, testloader, seq_len, in_dim, args.norm)
-
-    #         print(f"\n=>> Epoch {epoch + 1} Metrics ===")
-    #         print(
-    #             f"\tTrain Loss: {train_loss:.5f} "
-    #             f"-- Val Loss: {val_loss:.5f} "
-    #             f"-- Test Loss: {test_loss:.5f}\n"
-    #             f"\tVal Accuracy: {val_acc:.4f} "
-    #             f"-- Test Accuracy: {test_acc:.4f}"
-    #         )
-
-    #     else:
-    #         # else use test set as validation set (e.g. IMDB)
-    #         print(f"[*] Running Epoch {epoch + 1} Test...")
-    #         val_loss, val_acc = validate(state, model_cls, testloader, seq_len, in_dim, args.norm)
-
-    #         print(f"\n=>> Epoch {epoch + 1} Metrics ===")
-    #         print(
-    #             f"\tTrain Loss: {train_loss:.5f}  -- Test Loss: {val_loss:.5f}\n"
-    #             f"\tTest Accuracy: {val_acc:.4f}"
-    #         )
-
-    #     # For early stopping purposes
-    #     if val_loss < best_val_loss:
-    #         count = 0
-    #         best_val_loss = val_loss
-    #     else:
-    #         count += 1
-
-    #     if val_acc > best_acc:
-    #         # Increment counters etc.
-    #         count = 0
-    #         best_loss, best_acc, best_epoch = val_loss, val_acc, epoch
-    #         if valloader is not None:
-    #             best_test_loss, best_test_acc = test_loss, test_acc
-    #         else:
-    #             best_test_loss, best_test_acc = best_loss, best_acc
-
-    #     # For learning rate decay purposes:
-    #     input = lr, ssm_lr, lr_count, val_acc, opt_acc
-    #     lr, ssm_lr, lr_count, opt_acc = reduce_lr_on_plateau(
-    #         input, factor=args.reduce_factor, patience=args.lr_patience, lr_min=args.lr_min
-    #     )
-
-    #     # Print best accuracy & loss so far...
-    #     print(
-    #         f"\tBest Val Loss: {best_loss:.5f} -- Best Val Accuracy:"
-    #         f" {best_acc:.4f} at Epoch {best_epoch + 1}\n"
-    #         f"\tBest Test Loss: {best_test_loss:.5f} -- Best Test Accuracy:"
-    #         f" {best_test_acc:.4f} at Epoch {best_epoch + 1}\n"
-    #     )
-
-    #     metrics = {
-    #         "Training Loss": train_loss,
-    #         "Val Loss": val_loss,
-    #         "Val Accuracy": val_acc,
-    #         "Count": count,
-    #         "Learning rate count": lr_count,
-    #         "Opt acc": opt_acc,
-    #         "lr": state.opt_state.inner_states["regular"].inner_state.hyperparams["learning_rate"],
-    #         "ssm_lr": state.opt_state.inner_states["ssm"].inner_state.hyperparams["learning_rate"],
-    #     }
-    #     if valloader is not None:
-    #         metrics["Test Loss"] = test_loss
-    #         metrics["Test Accuracy"] = test_acc
-    #     wandb.log(metrics)
-
-    #     wandb.run.summary["Best Val Loss"] = best_loss
-    #     wandb.run.summary["Best Val Accuracy"] = best_acc
-    #     wandb.run.summary["Best Epoch"] = best_epoch
-    #     wandb.run.summary["Best Test Loss"] = best_test_loss
-    #     wandb.run.summary["Best Test Accuracy"] = best_test_acc
-
-    #     if count > args.early_stop_patience:
-    #         break
-
-
-
-
-
-
-
-
-
+    print(state)
 """
+    #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
+    best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
+    steps_per_epoch = int(train_size / args.batch_size)
+    for epoch in range(args.epochs):
+        print(f"[*] Starting Training Epoch {epoch + 1}...")
+        
+        state, train_loss = train_epoch(
+            state, model, trainloader, seq_len, in_dim, args.norm, loss_fun
+        )
+
+        # HERE 25.10.2023 BZW. ich glaube es könnte hier wirklich besser sein hier vorerst mit 
+        # den training loops von dem quickstart tutorial zu arbeiten. wäre wichtiger das bis 
+        # abfahrt auf mnist zum laufen zu bringen. dementsprechend dann auch die datalaoder anpassen
+
+        if valloader is not None:
+            print(f"[*] Running Epoch {epoch + 1} Validation...")
+            val_loss, val_acc = validate(state, model_cls, valloader, seq_len, in_dim, args.norm)
+
+            print(f"[*] Running Epoch {epoch + 1} Test...")
+            test_loss, test_acc = validate(state, model_cls, testloader, seq_len, in_dim, args.norm)
+
+            print(f"\n=>> Epoch {epoch + 1} Metrics ===")
+            print(
+                f"\tTrain Loss: {train_loss:.5f} "
+                f"-- Val Loss: {val_loss:.5f} "
+                f"-- Test Loss: {test_loss:.5f}\n"
+                f"\tVal Accuracy: {val_acc:.4f} "
+                f"-- Test Accuracy: {test_acc:.4f}"
+            )
+
+        else:
+            # else use test set as validation set (e.g. IMDB)
+            print(f"[*] Running Epoch {epoch + 1} Test...")
+            val_loss, val_acc = validate(state, model_cls, testloader, seq_len, in_dim, args.norm)
+
+            print(f"\n=>> Epoch {epoch + 1} Metrics ===")
+            print(
+                f"\tTrain Loss: {train_loss:.5f}  -- Test Loss: {val_loss:.5f}\n"
+                f"\tTest Accuracy: {val_acc:.4f}"
+            )
+
+        # For early stopping purposes
+        if val_loss < best_val_loss:
+            count = 0
+            best_val_loss = val_loss
+        else:
+            count += 1
+
+        if val_acc > best_acc:
+            # Increment counters etc.
+            count = 0
+            best_loss, best_acc, best_epoch = val_loss, val_acc, epoch
+            if valloader is not None:
+                best_test_loss, best_test_acc = test_loss, test_acc
+            else:
+                best_test_loss, best_test_acc = best_loss, best_acc
+
+        # For learning rate decay purposes:
+        input = lr, ssm_lr, lr_count, val_acc, opt_acc
+        lr, ssm_lr, lr_count, opt_acc = reduce_lr_on_plateau(
+            input, factor=args.reduce_factor, patience=args.lr_patience, lr_min=args.lr_min
+        )
+
+        # Print best accuracy & loss so far...
+        print(
+            f"\tBest Val Loss: {best_loss:.5f} -- Best Val Accuracy:"
+            f" {best_acc:.4f} at Epoch {best_epoch + 1}\n"
+            f"\tBest Test Loss: {best_test_loss:.5f} -- Best Test Accuracy:"
+            f" {best_test_acc:.4f} at Epoch {best_epoch + 1}\n"
+        )
+
+        metrics = {
+            "Training Loss": train_loss,
+            "Val Loss": val_loss,
+            "Val Accuracy": val_acc,
+            "Count": count,
+            "Learning rate count": lr_count,
+            "Opt acc": opt_acc,
+            "lr": state.opt_state.inner_states["regular"].inner_state.hyperparams["learning_rate"],
+            "ssm_lr": state.opt_state.inner_states["ssm"].inner_state.hyperparams["learning_rate"],
+        }
+        if valloader is not None:
+            metrics["Test Loss"] = test_loss
+            metrics["Test Accuracy"] = test_acc
+        wandb.log(metrics)
+
+        wandb.run.summary["Best Val Loss"] = best_loss
+        wandb.run.summary["Best Val Accuracy"] = best_acc
+        wandb.run.summary["Best Epoch"] = best_epoch
+        wandb.run.summary["Best Test Loss"] = best_test_loss
+        wandb.run.summary["Best Test Accuracy"] = best_test_acc
+
+        if count > args.early_stop_patience:
+            break
+
+
+
+
+
+
+
+
+
+
 
 @jax.jit
 def train_step(state, rng, inputs, labels, model, classification=False):

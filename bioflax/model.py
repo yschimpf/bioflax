@@ -197,7 +197,7 @@ BatchBioNeuralNetwork = nn.vmap(
     axis_name='batch',
     )
     
-model = BatchBioNeuralNetwork(hidden_layers=[40, 40], activations=["relu", "relu"],mode = "kp")
-params = model.init(jax.random.PRNGKey(0), jnp.ones((2,)))
-y = model.apply(params, jnp.ones((2,)))
-print(y)
+#model = BatchBioNeuralNetwork(hidden_layers=[40, 40], activations=["relu", "relu"],mode = "kp")
+#params = model.init(jax.random.PRNGKey(0), jnp.ones((2,)))
+#y = model.apply(params, jnp.ones((2,)))
+#print(y)

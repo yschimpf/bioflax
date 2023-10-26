@@ -29,11 +29,11 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
         sequence length used when running model
     """
     dummy_input = jnp.ones((batch_size, seq_len, in_dim))
-    params = model.init(rng, dummy_input)["params"]
+    params = model.init(rng, dummy_input)
     tx = optax.sgd(learning_rate=lr, momentum=momentum) #make more generic later
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
-def train_epoch(state, model, trainloader, seq_len, in_dim, norm):
+def train_epoch(state, model, trainloader, seq_len, in_dim, norm, loss_function):
     """
     Training function for an epoch that loops over batches.
     """
@@ -41,11 +41,15 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, norm):
 
     for batch in tqdm(trainloader):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
-        state, loss = train_step(state, inputs, labels, model, norm)
+        state, loss = train_step(state, inputs, labels, model, norm, loss_function)
         batch_losses.append(loss)  # log loss value
 
     # Return average loss over batches
     return state, jnp.mean(jnp.array(batch_losses))
+
+def get_loss(loss_function, logits, labels):
+    if(loss_function == "CE"):
+        return optax.softmax_cross_entropy_with_logits(logits=logits, labels=labels).mean()
 
 def prep_batch(batch, seq_len, in_dim):
     """
@@ -76,12 +80,13 @@ def prep_batch(batch, seq_len, in_dim):
     #    inputs = one_hot(inputs, in_dim)
     return inputs, labels
 
-@partial(jax.jit, static_argnums=(5, 6))
-def train_step(state, inputs, labels, model, norm):
+@partial(jax.jit, static_argnums=(3, 4, 5))
+def train_step(state, inputs, labels, model, norm, loss_function):
     """Performs a single training step given a batch of data"""
 
     def loss_fn(params):
-        
+        logits = state.apply_fn({'params': params}, batch['image'])
+        return get_loss(loss_function, logits, labels)
 
 
     (loss, vars), grads = jax.value_and_grad(_loss, has_aux=True)(state.params)

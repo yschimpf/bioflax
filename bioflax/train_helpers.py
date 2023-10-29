@@ -33,7 +33,7 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     tx = optax.sgd(learning_rate=lr, momentum=momentum) #make more generic later
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
-def train_epoch(state, model, trainloader, seq_len, in_dim, norm, loss_function):
+def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
     """
     Training function for an epoch that loops over batches.
     ...
@@ -47,7 +47,6 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, norm, loss_function)
         length of a single input
     in_dim
         dimensionality of a single input
-    norm : -- HAVE TO LOOK UP --
     loss_function: str
         identifier to select loss function
     """
@@ -55,7 +54,7 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, norm, loss_function)
 
     for batch in tqdm(trainloader):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
-        state, loss = train_step(state, inputs, labels, model, norm, loss_function)
+        state, loss = train_step(state, inputs, labels, loss_function)
         batch_losses.append(loss)  # log loss value
 
     # Return average loss over batches
@@ -74,8 +73,10 @@ def get_loss(loss_function, logits, labels):
     labels : -- have to look up --
         labels for the batch
     """
+    print(logits.shape)
+    print(labels.shape)
     if(loss_function == "CE"):
-        return optax.softmax_cross_entropy_with_logits(logits=logits, labels=labels).mean()
+        return optax.softmax_cross_entropy_with_integer_labels(logits=logits, labels=labels).mean()
 
 def prep_batch(batch, seq_len, in_dim):
     """
@@ -106,20 +107,51 @@ def prep_batch(batch, seq_len, in_dim):
     #    inputs = one_hot(inputs, in_dim)
     return inputs, labels
 
-@partial(jax.jit, static_argnums=(3, 4, 5))
-def train_step(state, inputs, labels, model, norm, loss_function):
-    """Performs a single training step given a batch of data"""
-
+@partial(jax.jit, static_argnums=(3))
+def train_step(state, inputs, labels, loss_function):
+    """
+    Performs a single training step given a batch of data
+    ...
+    Parameters
+    __________
+    state : TrainState
+        current train state of the model
+    inputs : -- have to look up --
+        inputs for the batch
+    labels : -- have to look up --
+        labels for the batch
+    loss_function: str
+        identifier to select loss function
+    """
     def loss_fn(params):
-        logits = state.apply_fn({'params': params}, batch['image'])
-        return get_loss(loss_function, logits, labels)
-
-
-    (loss, vars), grads = jax.value_and_grad(_loss, has_aux=True)(state.params)
-
-    if norm in ["batch"]:
-        state = state.apply_gradients(grads=grads, batch_stats=vars["batch_stats"])
-    else:
-        state = state.apply_gradients(grads=grads)
-
+        logits = state.apply_fn(params, inputs) #model.apply genau gleicher fehler der fix geht also nicht: hier vllt. model.apply aber dann muss ich glaub im model die attribute als parameter machen
+        loss = get_loss(loss_function, logits, labels)
+        return loss
+    loss, grads = jax.value_and_grad(loss_fn)(state.params)
+    state = state.apply_gradients(grads=grads)
     return state, loss
+
+@partial(jnp.vectorize, signature="(c),()->()")
+def compute_accuracy(logits, label):
+    return jnp.mean(jnp.argmax(logits) == label)
+
+@partial(jax.jit, static_argnums=(3))
+def eval_step(inputs, labels, state, loss_function):
+    logits = state.apply_fn({"params": state.params}, inputs)
+    losses = get_loss(loss_function,logits, labels)
+    accs = None
+    if loss_function == "CE":
+        accs = compute_accuracy(logits, labels)
+    return jnp.mean(losses), accs, logits
+
+
+def validate(state, testloader, seq_len, in_dim, loss_function):
+    """Validation function that loops over batches"""
+    losses, accuracies = jnp.array([]), jnp.array([])
+
+    for batch in tqdm(testloader):
+        inputs, labels = prep_batch(batch, seq_len, in_dim)
+        loss, acc, logits = eval_step(inputs, labels, state, loss_function)
+        losses = jnp.append(losses, loss)
+        accuracies = jnp.append(accuracies, acc)
+    return jnp.mean(losses), jnp.mean(accuracies)

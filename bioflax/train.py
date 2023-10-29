@@ -13,6 +13,8 @@ import wandb
 from functools import partial
 from .train_helpers import (
     create_train_state,
+    train_epoch,
+    validate
 )
 from .dataloading import (
     create_dataset
@@ -40,6 +42,8 @@ args needs:
     - args.mode (string of mode name)
     - args.momentum (float)
     - args.epochs (int)
+    - args.loss_fun (string of loss function name)
+    - args.val_split (float) (0. corresponds to val_set = None)
 
 """
 
@@ -50,6 +54,11 @@ def train(): #(args):
 
     best_test_loss = 100000000
     best_test_acc = -10000.0
+
+    # parameter initialization
+    batch_size = 32 #args.batch_size
+    loss_fn = "CE" #args.loss_fun
+    val_split = 0.1 #args.val_split
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -74,12 +83,13 @@ def train(): #(args):
     init_rng, key = random.split(init_rng, num=2)
     (
         trainloader,
+        valloader,
         testloader,
         output_features, #in case I let the output features be defined like this which makes sense I don't need to specify that as an argument in args anymore
         seq_len,
         in_dim,
         train_size,
-    ) = create_dataset(seed=0, batch_size=32, dataset="mnist")#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
+    ) = create_dataset(seed=42, batch_size=32, dataset="mnist", val_split=val_split)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
     print(f"[*] Starting training on mnist =>> Initializing...") # `{args.dataset}` =>> Initializing...")
 
     # Initialize model
@@ -96,20 +106,20 @@ def train(): #(args):
         lr = lr,
         momentum = momentum,
         in_dim = in_dim,
-        batch_size = 32, #args.batch_size,
+        batch_size = batch_size, #args.batch_size,
         seq_len = seq_len,
     )
 
     print(state)
-"""
+
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
-    steps_per_epoch = int(train_size / args.batch_size)
-    for epoch in range(args.epochs):
+    steps_per_epoch = int(train_size / batch_size)
+    for epoch in range(1000): #(args.epochs):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
         
         state, train_loss = train_epoch(
-            state, model, trainloader, seq_len, in_dim, args.norm, loss_fun
+            state, model, trainloader, seq_len, in_dim, loss_fn
         )
 
         # HERE 25.10.2023 BZW. ich glaube es könnte hier wirklich besser sein hier vorerst mit 
@@ -118,10 +128,10 @@ def train(): #(args):
 
         if valloader is not None:
             print(f"[*] Running Epoch {epoch + 1} Validation...")
-            val_loss, val_acc = validate(state, model_cls, valloader, seq_len, in_dim, args.norm)
+            val_loss, val_acc = validate(state, valloader, seq_len, in_dim, loss_fn)
 
             print(f"[*] Running Epoch {epoch + 1} Test...")
-            test_loss, test_acc = validate(state, model_cls, testloader, seq_len, in_dim, args.norm)
+            test_loss, test_acc = validate(state, testloader, seq_len, in_dim, loss_fn)
 
             print(f"\n=>> Epoch {epoch + 1} Metrics ===")
             print(
@@ -135,7 +145,7 @@ def train(): #(args):
         else:
             # else use test set as validation set (e.g. IMDB)
             print(f"[*] Running Epoch {epoch + 1} Test...")
-            val_loss, val_acc = validate(state, model_cls, testloader, seq_len, in_dim, args.norm)
+            val_loss, val_acc = validate(state, testloader, seq_len, in_dim, loss_fn)
 
             print(f"\n=>> Epoch {epoch + 1} Metrics ===")
             print(
@@ -144,11 +154,11 @@ def train(): #(args):
             )
 
         # For early stopping purposes
-        if val_loss < best_val_loss:
-            count = 0
-            best_val_loss = val_loss
-        else:
-            count += 1
+        # if val_loss < best_val_loss:
+        #     count = 0
+        #     best_val_loss = val_loss
+        # else:
+        #     count += 1
 
         if val_acc > best_acc:
             # Increment counters etc.
@@ -158,13 +168,6 @@ def train(): #(args):
                 best_test_loss, best_test_acc = test_loss, test_acc
             else:
                 best_test_loss, best_test_acc = best_loss, best_acc
-
-        # For learning rate decay purposes:
-        input = lr, ssm_lr, lr_count, val_acc, opt_acc
-        lr, ssm_lr, lr_count, opt_acc = reduce_lr_on_plateau(
-            input, factor=args.reduce_factor, patience=args.lr_patience, lr_min=args.lr_min
-        )
-
         # Print best accuracy & loss so far...
         print(
             f"\tBest Val Loss: {best_loss:.5f} -- Best Val Accuracy:"
@@ -178,10 +181,6 @@ def train(): #(args):
             "Val Loss": val_loss,
             "Val Accuracy": val_acc,
             "Count": count,
-            "Learning rate count": lr_count,
-            "Opt acc": opt_acc,
-            "lr": state.opt_state.inner_states["regular"].inner_state.hyperparams["learning_rate"],
-            "ssm_lr": state.opt_state.inner_states["ssm"].inner_state.hyperparams["learning_rate"],
         }
         if valloader is not None:
             metrics["Test Loss"] = test_loss
@@ -193,53 +192,3 @@ def train(): #(args):
         wandb.run.summary["Best Epoch"] = best_epoch
         wandb.run.summary["Best Test Loss"] = best_test_loss
         wandb.run.summary["Best Test Accuracy"] = best_test_acc
-
-        if count > args.early_stop_patience:
-            break
-
-
-
-
-
-
-
-
-
-
-
-@jax.jit
-def train_step(state, rng, inputs, labels, model, classification=False):
-
-    def loss_fn(params):
-        p = {"params": params}
-        vars = None
-        logits = model.apply(p, inputs)
-        return logits
-
-    (loss, vars), grads = jax.value_and_grad(_loss, has_aux=True)(state.params)
-
-    if norm in ["batch"]:
-        state = state.apply_gradients(grads=grads, batch_stats=vars["batch_stats"])
-    else:
-        state = state.apply_gradients(grads=grads)
-
-    return state, loss
-
-
-def train_epoch(state, rng, model, trainloader, seq_len, in_dim, norm, lr_params):
-    model = model(training=True)  # model in training mode
-    batch_losses = []
-    decay_function, ssm_lr, lr, step, end_step, lr_min = lr_params
-    print(“length train loader”, len(trainloader))
-    for batch in trainloader:
-        inputs, labels, masks = prep_batch(batch, seq_len, in_dim)
-        rng, drop_rng = jax.random.split(rng)
-        state, loss = train_step(
-            state, drop_rng, inputs, labels, masks, model, norm, model.classification
-        )
-        batch_losses.append(loss)  # log loss value
-        lr_params = (decay_function, ssm_lr, lr, step, end_step, lr_min)
-        state, step = update_learning_rate_per_step(lr_params, state)
-    # Return average loss over batches
-    return state, jnp.mean(jnp.array(batch_losses)), step
-"""

@@ -6,7 +6,7 @@ from flax.training import train_state
 import optax
 from typing import Any
 from .model import (
-    #BioNeuralNetwork, 
+    BioNeuralNetwork, 
     BatchBioNeuralNetwork
 )
 import wandb
@@ -59,6 +59,7 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
+    epochs = 10 #args.epochs
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -99,6 +100,7 @@ def train(): #(args):
         features = output_features,
         mode="bp", #args.mode,
     )
+    print(model)
 
     state = create_train_state(
         model = model,
@@ -115,7 +117,7 @@ def train(): #(args):
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
     steps_per_epoch = int(train_size / batch_size)
-    for epoch in range(1000): #(args.epochs):
+    for epoch in range(epochs): #(args.epochs):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
         
         state, train_loss = train_epoch(

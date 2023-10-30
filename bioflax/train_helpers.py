@@ -28,8 +28,9 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     seq_len : int
         sequence length used when running model
     """
-    dummy_input = jnp.ones((batch_size, seq_len, in_dim))
-    params = model.init(rng, dummy_input)
+    dummy_input = jnp.ones((batch_size, in_dim, seq_len))
+    params = model.init(rng, dummy_input)['params']
+    #print("params in train state: ", params["Dense_0"]["kernel"].shape)
     tx = optax.sgd(learning_rate=lr, momentum=momentum) #make more generic later
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
@@ -73,8 +74,9 @@ def get_loss(loss_function, logits, labels):
     labels : -- have to look up --
         labels for the batch
     """
-    print(logits.shape)
-    print(labels.shape)
+    ###print("Logits shape in get_loss: ", logits.shape)
+    ##print("Logits in get_loss: ", logits)
+    #print("Labels shape in get loss: ", labels.shape)
     if(loss_function == "CE"):
         return optax.softmax_cross_entropy_with_integer_labels(logits=logits, labels=labels).mean()
 
@@ -92,13 +94,14 @@ def prep_batch(batch, seq_len, in_dim):
         input dimension of model
     """
     inputs, labels = batch
+    #print("Shape in prep_batch:", inputs.shape)
     inputs = jnp.array(inputs.numpy()).astype(float)  # convert to jax
     labels = jnp.array(labels.numpy())  # convert to jax
 
     # Make all batches have same sequence length
-    num_pad = seq_len - inputs.shape[1]
-    if num_pad > 0:
-        inputs = jnp.pad(inputs, ((0, 0), (0, num_pad)), "constant", constant_values=(0,))
+    #num_pad = seq_len - inputs.shape[1]
+    #if num_pad > 0:
+    #    inputs = jnp.pad(inputs, ((0, 0), (0, num_pad)), "constant", constant_values=(0,))
 
     # Inputs size is [n_batch, seq_len] or [n_batch, seq_len, in_dim].
     # If there are not three dimensions and trailing dimension is not equal to in_dim then
@@ -124,8 +127,10 @@ def train_step(state, inputs, labels, loss_function):
         identifier to select loss function
     """
     def loss_fn(params):
-        logits = state.apply_fn(params, inputs) #model.apply genau gleicher fehler der fix geht also nicht: hier vllt. model.apply aber dann muss ich glaub im model die attribute als parameter machen
-        loss = get_loss(loss_function, logits, labels)
+        #print(params)
+        #print(inputs.shape)
+        logits = state.apply_fn({'params': params}, inputs) #model.apply genau gleicher fehler der fix geht also nicht: hier vllt. model.apply aber dann muss ich glaub im model die attribute als parameter machen
+        loss = get_loss(loss_function, jnp.squeeze(logits), labels)
         return loss
     loss, grads = jax.value_and_grad(loss_fn)(state.params)
     state = state.apply_gradients(grads=grads)
@@ -138,10 +143,10 @@ def compute_accuracy(logits, label):
 @partial(jax.jit, static_argnums=(3))
 def eval_step(inputs, labels, state, loss_function):
     logits = state.apply_fn({"params": state.params}, inputs)
-    losses = get_loss(loss_function,logits, labels)
+    losses = get_loss(loss_function,jnp.squeeze(logits), labels)
     accs = None
     if loss_function == "CE":
-        accs = compute_accuracy(logits, labels)
+        accs = compute_accuracy(jnp.squeeze(logits), labels)
     return jnp.mean(losses), accs, logits
 
 

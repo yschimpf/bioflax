@@ -1,0 +1,25 @@
+2023-10-30 18:10:55,769 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Current SDK version is 0.15.12
+2023-10-30 18:10:55,769 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Configure stats pid to 78848
+2023-10-30 18:10:55,769 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Loading settings from /Users/yschimpf/.config/wandb/settings
+2023-10-30 18:10:55,769 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Loading settings from /Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/wandb/settings
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'run_train.py', 'program_abspath': '/Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/run_train.py', 'program': '/Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/run_train.py'}
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_init.py:_log_setup():528] Logging user logs to /Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/wandb/offline-run-20231030_181055-pfefu2vj/logs/debug.log
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_init.py:_log_setup():529] Logging internal logs to /Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/wandb/offline-run-20231030_181055-pfefu2vj/logs/debug-internal.log
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_init.py:init():568] calling init triggers
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_init.py:init():575] wandb.init called with sweep_config: {}
+config: {}
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_init.py:init():618] starting backend
+2023-10-30 18:10:55,770 INFO    MainThread:78848 [wandb_init.py:init():622] setting up manager
+2023-10-30 18:10:55,777 INFO    MainThread:78848 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=spawn,fork,forkserver, using: spawn
+2023-10-30 18:10:55,780 INFO    MainThread:78848 [wandb_init.py:init():628] backend started and connected
+2023-10-30 18:10:55,787 INFO    MainThread:78848 [wandb_init.py:init():720] updated telemetry
+2023-10-30 18:10:55,829 INFO    MainThread:78848 [wandb_init.py:init():753] communicating run to backend with 90.0 second timeout
+2023-10-30 18:10:55,836 INFO    MainThread:78848 [wandb_init.py:init():804] starting run threads in backend
+2023-10-30 18:10:55,942 INFO    MainThread:78848 [wandb_run.py:_console_start():2199] atexit reg
+2023-10-30 18:10:55,942 INFO    MainThread:78848 [wandb_run.py:_redirect():2054] redirect: wrap_raw
+2023-10-30 18:10:55,942 INFO    MainThread:78848 [wandb_run.py:_redirect():2119] Wrapping output streams.
+2023-10-30 18:10:55,942 INFO    MainThread:78848 [wandb_run.py:_redirect():2144] Redirects installed.
+2023-10-30 18:10:55,943 INFO    MainThread:78848 [wandb_init.py:init():845] run started, returning control to user process
+2023-10-30 18:10:58,634 WARNING MsgRouterThr:78848 [router.py:message_loop():77] message_loop has been closed

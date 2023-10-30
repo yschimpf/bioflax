@@ -14,8 +14,8 @@ def create_mnist_dataset(seed, batch_size, val_split):
     # Define transformations to be applied to the data
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Lambda(lambda x: x.view(L,d_input)),
-        transforms.Normalize((0.1307,), (0.3081,))
+        transforms.Normalize((0.1307,), (0.3081,)),
+        transforms.Lambda(lambda x: x.view(L, d_input).T),
     ])
 
     # Load the training and test datasets

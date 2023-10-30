@@ -1,0 +1,40 @@
+2023-10-30 20:13:59,007 INFO    StreamThr :89976 [internal.py:wandb_internal():86] W&B internal server running at pid: 89976, started at: 2023-10-30 20:13:59.006737
+2023-10-30 20:13:59,008 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status
+2023-10-30 20:13:59,011 INFO    WriterThread:89976 [datastore.py:open_for_write():85] open: /Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/wandb/offline-run-20231030_201359-dpg7sx30/run-dpg7sx30.wandb
+2023-10-30 20:13:59,048 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: run_start
+2023-10-30 20:13:59,060 DEBUG   HandlerThread:89976 [system_info.py:__init__():32] System info init
+2023-10-30 20:13:59,060 DEBUG   HandlerThread:89976 [system_info.py:__init__():47] System info init done
+2023-10-30 20:13:59,060 INFO    HandlerThread:89976 [system_monitor.py:start():194] Starting system monitor
+2023-10-30 20:13:59,060 INFO    SystemMonitor:89976 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2023-10-30 20:13:59,061 INFO    HandlerThread:89976 [system_monitor.py:probe():214] Collecting system info
+2023-10-30 20:13:59,061 DEBUG   HandlerThread:89976 [system_info.py:probe():196] Probing system
+2023-10-30 20:13:59,061 INFO    SystemMonitor:89976 [interfaces.py:start():190] Started cpu monitoring
+2023-10-30 20:13:59,063 INFO    SystemMonitor:89976 [interfaces.py:start():190] Started disk monitoring
+2023-10-30 20:13:59,063 INFO    SystemMonitor:89976 [interfaces.py:start():190] Started memory monitoring
+2023-10-30 20:13:59,064 INFO    SystemMonitor:89976 [interfaces.py:start():190] Started network monitoring
+2023-10-30 20:13:59,075 DEBUG   HandlerThread:89976 [system_info.py:_probe_git():181] Probing git
+2023-10-30 20:13:59,122 DEBUG   HandlerThread:89976 [system_info.py:_probe_git():189] Probing git done
+2023-10-30 20:13:59,122 DEBUG   HandlerThread:89976 [system_info.py:probe():244] Probing system done
+2023-10-30 20:13:59,122 DEBUG   HandlerThread:89976 [system_monitor.py:probe():223] {'os': 'macOS-10.16-x86_64-i386-64bit', 'python': '3.11.5', 'heartbeatAt': '2023-10-30T19:13:59.061644', 'startedAt': '2023-10-30T19:13:59.000358', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/run_train.py', 'codePathLocal': 'run_train.py', 'codePath': 'run_train.py', 'git': {'remote': 'https://github.com/yschimpf/bioflax.git', 'commit': '34193e818f94c40452e98e36300916df4287d1cd'}, 'email': 'yaschimpf@gmail.com', 'root': '/Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax', 'host': 'student-net-hg-dock-1-c-194.intern.ethz.ch', 'username': 'yschimpf', 'executable': '/Users/yschimpf/opt/anaconda3/envs/iml/bin/python', 'cpu_count': 8, 'cpu_count_logical': 8, 'cpu_freq': {'current': 2400, 'min': 2400, 'max': 2400}, 'cpu_freq_per_core': [{'current': 2400, 'min': 2400, 'max': 2400}], 'disk': {'/': {'total': 228.27386474609375, 'used': 191.64875411987305}}, 'memory': {'total': 8.0}}
+2023-10-30 20:13:59,122 INFO    HandlerThread:89976 [system_monitor.py:probe():224] Finished collecting system info
+2023-10-30 20:13:59,122 INFO    HandlerThread:89976 [system_monitor.py:probe():227] Publishing system info
+2023-10-30 20:13:59,122 DEBUG   HandlerThread:89976 [system_info.py:_save_pip():52] Saving list of pip packages installed into the current environment
+2023-10-30 20:13:59,123 DEBUG   HandlerThread:89976 [system_info.py:_save_pip():68] Saving pip packages done
+2023-10-30 20:13:59,123 DEBUG   HandlerThread:89976 [system_info.py:_save_conda():75] Saving list of conda packages installed into the current environment
+2023-10-30 20:13:59,146 DEBUG   HandlerThread:89976 [system_info.py:_save_conda():87] Saving conda packages done
+2023-10-30 20:13:59,147 INFO    HandlerThread:89976 [system_monitor.py:probe():229] Finished publishing system info
+2023-10-30 20:14:04,033 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:04,033 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report
+2023-10-30 20:14:09,056 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:09,056 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report
+2023-10-30 20:14:14,082 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:14,083 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report
+2023-10-30 20:14:19,105 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:19,106 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report
+2023-10-30 20:14:19,179 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: partial_history
+2023-10-30 20:14:24,131 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:24,133 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report
+2023-10-30 20:14:29,153 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:29,154 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report
+2023-10-30 20:14:34,177 DEBUG   HandlerThread:89976 [handler.py:handle_request():146] handle_request: status_report
+2023-10-30 20:14:34,179 DEBUG   SenderThread:89976 [sender.py:send_request():407] send_request: status_report

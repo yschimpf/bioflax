@@ -5,6 +5,8 @@ from tqdm import tqdm
 from flax.training import train_state
 import optax
 from typing import Any
+import matplotlib.pyplot as plt
+import torch
 from .model import (
     BioNeuralNetwork, 
     BatchBioNeuralNetwork
@@ -14,7 +16,8 @@ from functools import partial
 from .train_helpers import (
     create_train_state,
     train_epoch,
-    validate
+    validate,
+    pred_step
 )
 from .dataloading import (
     create_dataset
@@ -59,7 +62,7 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 10 #args.epochs
+    epochs = 1 #args.epochs
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -100,7 +103,7 @@ def train(): #(args):
         features = output_features,
         mode="bp", #args.mode,
     )
-    print(model)
+    #print(model)
 
     state = create_train_state(
         model = model,
@@ -112,7 +115,7 @@ def train(): #(args):
         seq_len = seq_len,
     )
 
-    print(state)
+    #print(state)
 
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
@@ -194,3 +197,16 @@ def train(): #(args):
         wandb.run.summary["Best Epoch"] = best_epoch
         wandb.run.summary["Best Test Loss"] = best_test_loss
         wandb.run.summary["Best Test Accuracy"] = best_test_acc
+
+    test_batch = next(iter(testloader))
+    pred = pred_step(state, test_batch, seq_len, in_dim)
+
+    fig, axs = plt.subplots(5, 5, figsize=(12, 12))
+    inputs, labels = test_batch
+    inputs = torch.reshape(inputs, (inputs.shape[0], 28, 28, 1))
+    print(inputs.shape)
+    for i, ax in enumerate(axs.flatten()):
+        ax.imshow(inputs[i, ..., 0], cmap='gray')
+        ax.set_title(f"label={pred[i]}")
+        ax.axis('off')
+    plt.show()

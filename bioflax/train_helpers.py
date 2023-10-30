@@ -160,3 +160,9 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
         losses = jnp.append(losses, loss)
         accuracies = jnp.append(accuracies, acc)
     return jnp.mean(losses), jnp.mean(accuracies)
+
+
+def pred_step(state, batch, seq_len, in_dim):
+  inputs, labels = prep_batch(batch, seq_len, in_dim)
+  logits = state.apply_fn({'params': state.params}, inputs)
+  return jnp.squeeze(logits).argmax(axis=1)

@@ -151,6 +151,7 @@ class RandomDenseLinearDFAOutput(nn.Module):
             return nn.vjp(f, module, x)
 
         def bwd(vjp_fn, delta):
+            print("Shape of delta in DFA output: ", delta.shape)
             delta_params, _ = vjp_fn(delta)
             return (delta_params, delta)
         
@@ -178,6 +179,35 @@ class RandomDenseLinearDFAHidden(nn.Module):
 
     @nn.compact
     def __call__(self, x):
+        B = self.param("B", nn.initializers.lecun_normal(), (self.features,self.final_output_dim))
+
+        def f(module, x, B):
+            return self.activation(module(x))
+        
+        def fwd(module, x, B):
+            primals_out, vjp_fun = nn.vjp(f, module, x, B)
+            return primals_out, (vjp_fun, B)
+
+        #problem: even if I pass the delta directly further the activation functions derviative will still be applied and passed (without applying it however I don't get that information here)
+        def bwd(vjp_fn_B, delta):
+            vjp_fn, B = vjp_fn_B
+            print("Shape of delta in DFA: ", delta.shape)
+            print("Shape of B in DFA: ", B.shape)
+            delta_params, _, _ = vjp_fn((B @ delta.transpose()).transpose())
+            return (delta_params, delta, jnp.zeros_like(B))
+        
+        forward_module = nn.Dense(self.features)
+        custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+        return custom_f(forward_module, x, B)
+    """
+    old version:
+    ____________
+    features : int
+    final_output_dim : int
+    activation : Any = nn.relu
+
+    @nn.compact
+    def __call__(self, x):
         
         def f(module, x):
             return self.activation(module(x))
@@ -194,6 +224,8 @@ class RandomDenseLinearDFAHidden(nn.Module):
         forward_module = nn.Dense(self.features)
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x)
+    """
+    
 
 
 class BioNeuralNetwork(nn.Module):

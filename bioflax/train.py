@@ -62,7 +62,10 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 20 #args.epochs
+    epochs = 10 #args.epochs
+    mode = "dfa" #args.mode
+    activations = ["relu", "relu"] #args.activations
+    hidden_layers = [40, 40] #args.hidden_layers
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -98,10 +101,10 @@ def train(): #(args):
 
     # Initialize model
     model = BatchBioNeuralNetwork(
-        hidden_layers=[40, 40], #args.hidden_layers,
-        activations=["relu", "relu"], #args.activations,
+        hidden_layers=hidden_layers, #args.hidden_layers,
+        activations=activations, #args.activations,
         features = output_features,
-        mode="kp", #args.mode,
+        mode=mode, #args.mode,
     )
     #print(model)
 

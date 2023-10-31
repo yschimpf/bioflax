@@ -5,7 +5,6 @@ import jax.numpy as jnp
 from flax import linen as nn
 
 #idea is to have activation function as part of the layer which is a nice workaround for using automated differentiation but makes the interface less generic
-
 class RandomDenseLinearDFAOutput(nn.Module):
     features : int
     self_activation : Any = nn.relu
@@ -27,15 +26,13 @@ class RandomDenseLinearDFAOutput(nn.Module):
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x)
 
-class RandomDenseLinearDFAHidden(nn.Module):
+class RandomDenseLinearDFAHiddenModified(nn.Module):
     features : int
     final_output_dim : int
-    next_layer_dim : int
     activation : Any = nn.relu
 
     @nn.compact
     def __call__(self, x):
-        
         B = self.param("B", nn.initializers.lecun_normal(), (self.features,self.final_output_dim))
 
         def f(module, x, B):
@@ -55,7 +52,7 @@ class RandomDenseLinearDFAHidden(nn.Module):
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x, B)
     
-class RandomDenseLinearDFAHiddenModified(nn.Module):
+class RandomDenseLinearDFAHidden(nn.Module):
     """
     Creates a hidden linear layer which uses direct feedback alignment for the backward pass.
     ...
@@ -114,14 +111,14 @@ print(params["params"]["B"]@jnp.array([1,1,1]))
 """
 
 
-z = False
+z = True
 
 if(z): #do everything for sigmoid
     class Network(nn.Module):
 
         @nn.compact
         def __call__(self, x):
-            x = RandomDenseLinearDFAHidden(3,2,2, nn.sigmoid)(x)
+            x = RandomDenseLinearDFAHiddenModified(3,2,2, nn.sigmoid)(x)
             x = RandomDenseLinearDFAOutput(2, nn.sigmoid)(x)
             return x
 
@@ -136,7 +133,7 @@ if(z): #do everything for sigmoid
     x = jnp.array([1., 2.])
     y = model.apply(params, x)
     print("a_1")
-    a_1 = params["params"]["RandomDenseLinearDFAHidden_0"]["Dense_0"]["kernel"].T @ x + params["params"]["RandomDenseLinearDFAHidden_0"]["Dense_0"]["bias"]
+    a_1 = params["params"]["RandomDenseLinearDFAHiddenModified_0"]["Dense_0"]["kernel"].T @ x + params["params"]["RandomDenseLinearDFAHiddenModified_0"]["Dense_0"]["bias"]
     print(a_1)
 
     print("h_1")
@@ -174,7 +171,7 @@ if(z): #do everything for sigmoid
     print(jnp.outer(h_1,jnp.ones((2,))*sigmoid_derivative(a_2)))
 
     print("dW_1")
-    print(jnp.outer(x,(params["params"]["RandomDenseLinearDFAHidden_0"]["B"] @ jnp.ones((2,)) * sigmoid_derivative(a_1))))
+    print(jnp.outer(x,(params["params"]["RandomDenseLinearDFAHiddenModified_0"]["B"] @ jnp.ones((2,)) * sigmoid_derivative(a_1))))
 
 
 
@@ -198,7 +195,7 @@ else: #do everything for relu
 
         @nn.compact
         def __call__(self, x):
-            x = RandomDenseLinearDFAHidden(3,2,2)(x)
+            x = RandomDenseLinearDFAHiddenModified(3,2,2)(x)
             x = RandomDenseLinearDFAOutput(2)(x)
             return x
 
@@ -214,7 +211,7 @@ else: #do everything for relu
     x = jnp.array([1., 2.])
     y = model.apply(params, x)
     print("a_1")
-    a_1 = params["params"]["RandomDenseLinearDFAHidden_0"]["Dense_0"]["kernel"].T @ x + params["params"]["RandomDenseLinearDFAHidden_0"]["Dense_0"]["bias"]
+    a_1 = params["params"]["RandomDenseLinearDFAHiddenModified_0"]["Dense_0"]["kernel"].T @ x + params["params"]["RandomDenseLinearDFAHiddenModified_0"]["Dense_0"]["bias"]
     print(a_1)
 
     print("h_1")
@@ -248,7 +245,7 @@ else: #do everything for relu
     print(jnp.outer(h_1,jnp.ones((2,))*relu_derivative(a_2)))
 
     print("dW_1")
-    print(jnp.outer(x,(params["params"]["RandomDenseLinearDFAHidden_0"]["B"] @ jnp.ones((2,)) * relu_derivative(a_1))))
+    print(jnp.outer(x,(params["params"]["RandomDenseLinearDFAHiddenModified_0"]["B"] @ jnp.ones((2,)) * relu_derivative(a_1))))
 
 
 

@@ -129,6 +129,7 @@ def train_step(state, inputs, labels, loss_function):
     def loss_fn(params):
         #print(params)
         #print(inputs.shape)
+        #with jax.checking_leaks():
         logits = state.apply_fn({'params': params}, inputs) #model.apply genau gleicher fehler der fix geht also nicht: hier vllt. model.apply aber dann muss ich glaub im model die attribute als parameter machen
         loss = get_loss(loss_function, jnp.squeeze(logits), labels)
         return loss

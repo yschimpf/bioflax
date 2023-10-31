@@ -62,7 +62,7 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 1 #args.epochs
+    epochs = 20 #args.epochs
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -101,7 +101,7 @@ def train(): #(args):
         hidden_layers=[40, 40], #args.hidden_layers,
         activations=["relu", "relu"], #args.activations,
         features = output_features,
-        mode="bp", #args.mode,
+        mode="kp", #args.mode,
     )
     #print(model)
 

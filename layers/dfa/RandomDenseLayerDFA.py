@@ -8,23 +8,20 @@ from flax import linen as nn
 
 class RandomDenseLinearDFAOutput(nn.Module):
     features : int
-    activation : Any = nn.relu
+    self_activation : Any = nn.relu
 
     @nn.compact
     def __call__(self, x):
 
         def f(module, x):
-            return self.activation(module(x))
+            return self.self_activation(module(x))
         
         def fwd(module, x):
             return nn.vjp(f, module, x)
-        
-        B = self.param("B", nn.initializers.lecun_normal(), (jnp.shape(x)[-1],self.features))
 
         def bwd(vjp_fn, delta):
             delta_params, _ = vjp_fn(delta)
-            delta_x = delta
-            return (delta_params, delta_x)
+            return (delta_params, delta)
         
         forward_module = nn.Dense(self.features)
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
@@ -39,6 +36,45 @@ class RandomDenseLinearDFAHidden(nn.Module):
     @nn.compact
     def __call__(self, x):
         
+        B = self.param("B", nn.initializers.lecun_normal(), (self.features,self.final_output_dim))
+
+        def f(module, x, B):
+            return self.activation(module(x))
+        
+        def fwd(module, x, B):
+            primals_out, vjp_fun = nn.vjp(f, module, x, B)
+            return primals_out, (vjp_fun, B)
+
+        #problem: even if I pass the delta directly further the activation functions derviative will still be applied and passed (without applying it however I don't get that information here)
+        def bwd(vjp_fn_B, delta):
+            vjp_fn, B = vjp_fn_B
+            delta_params, _, _ = vjp_fn(B @ delta)
+            return (delta_params, delta, jnp.zeros_like(B))
+        
+        forward_module = nn.Dense(self.features)
+        custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+        return custom_f(forward_module, x, B)
+    
+class RandomDenseLinearDFAHiddenModified(nn.Module):
+    """
+    Creates a hidden linear layer which uses direct feedback alignment for the backward pass.
+    ...
+    Attributes
+    __________
+    features : int
+        number of output features
+    final_output_dim : int
+        number of output features of the output layer
+    activation : Any = nn.relu
+        activation function applied to the weighted inputs of the layer
+    """
+    features : int
+    final_output_dim : int
+    activation : Any = nn.relu
+
+    @nn.compact
+    def __call__(self, x):
+        
         def f(module, x):
             return self.activation(module(x))
         
@@ -47,11 +83,9 @@ class RandomDenseLinearDFAHidden(nn.Module):
         
         B = self.param("B", nn.initializers.lecun_normal(), (self.features,self.final_output_dim))
 
-        #problem: even if I pass the delta directly further the activation functions derviative will still be applied and passed (without applying it however I don't get that information here)
         def bwd(vjp_fn, delta):
             delta_params, _ = vjp_fn(B @ delta)
-            delta_x = delta
-            return (delta_params, delta_x)
+            return (delta_params, delta)
         
         forward_module = nn.Dense(self.features)
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
@@ -170,6 +204,7 @@ else: #do everything for relu
 
     model = Network()
     params = model.init(jax.random.PRNGKey(0), jnp.ones((2,)))
+    print("Params of model: ", params)
 
     # Define the optimizer
     optimizer = optax.sgd(learning_rate=0.1)

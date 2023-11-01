@@ -62,10 +62,12 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 10 #args.epochs
+    epochs = 0 #args.epochs
     mode = "dfa" #args.mode
     activations = ["relu", "relu"] #args.activations
     hidden_layers = [40, 40] #args.hidden_layers
+    key = random.PRNGKey(0)#args.jax_seed)
+    dataset="teacher" #args.dataset
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -83,7 +85,7 @@ def train(): #(args):
 
     # Set seed for randomness
     print("[*] Setting Randomness...")
-    key = random.PRNGKey(0)#args.jax_seed)
+    
     init_rng, train_rng = random.split(key, num=2)
 
     # Create dataset
@@ -96,7 +98,7 @@ def train(): #(args):
         seq_len,
         in_dim,
         train_size,
-    ) = create_dataset(seed=42, batch_size=32, dataset="mnist", val_split=val_split)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
+    ) = create_dataset(seed=42, batch_size=32, dataset=dataset, val_split=val_split)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
     print(f"[*] Starting training on mnist =>> Initializing...") # `{args.dataset}` =>> Initializing...")
 
     # Initialize model
@@ -200,7 +202,7 @@ def train(): #(args):
         wandb.run.summary["Best Epoch"] = best_epoch
         wandb.run.summary["Best Test Loss"] = best_test_loss
         wandb.run.summary["Best Test Accuracy"] = best_test_acc
-
+    """
     test_batch = next(iter(testloader))
     pred = pred_step(state, test_batch, seq_len, in_dim)
 
@@ -213,3 +215,4 @@ def train(): #(args):
         ax.set_title(f"label={pred[i]}")
         ax.axis('off')
     plt.show()
+    """

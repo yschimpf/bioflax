@@ -1,9 +1,54 @@
 import torch
 from torchvision import datasets, transforms
+from flax import linen as nn
+import jax
+import jax.numpy as jnp
+from tqdm import tqdm
+from .model import (
+    BatchTeacher
+)
+
 
 def create_dataset(seed, batch_size, dataset, val_split):
     if(dataset == "mnist"):
         return create_mnist_dataset(seed, batch_size, val_split)
+    elif(dataset == "teacher"):
+        return create_teacher_dataset(seed, batch_size, val_split)
+
+def create_teacher_dataset(seed, batch_size, val_split):
+    _name_ = "teacher"
+    d_input = 1
+    d_output = 10
+    L = 20
+
+    model = BatchTeacher()
+    rng = jax.random.PRNGKey(seed)
+    model_rng, data_rng = jax.random.split(rng, num=2)
+    params = model.init(model_rng, jnp.ones((batch_size, d_input, L)))['params']
+
+    for i in tqdm(range(50)):
+        data_rng, key = jax.random.split(data_rng)
+        x = jax.random.normal(key, shape=(batch_size, d_input, L))
+        y = model.apply({'params': params}, x)
+        if(i == 0):
+            inputs = x
+            outputs = y
+        else:
+            inputs = jnp.concatenate((inputs, x), axis=0)
+            outputs = jnp.concatenate((outputs, y), axis=0)
+    
+    print(inputs.shape)
+    print(outputs.shape)
+
+    if seed is not None:
+        rng = torch.Generator()
+        rng.manual_seed(seed)
+    else:
+        rng = None
+
+    datalaoder = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs, outputs), batch_size=batch_size, shuffle=True, Generator = rng)
+    return datalaoder, None, datalaoder, d_output, L, d_input, len(inputs)
+
    
 
 def create_mnist_dataset(seed, batch_size, val_split):

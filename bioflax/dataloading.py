@@ -19,8 +19,8 @@ def create_dataset(seed, batch_size, dataset, val_split):
 def create_teacher_dataset(seed, batch_size, val_split):
     _name_ = "teacher"
     d_input = 1
-    d_output = 10
-    L = 20
+    d_output = 1
+    L = 1
 
     model = BatchTeacher()
     rng = jax.random.PRNGKey(seed)
@@ -37,9 +37,6 @@ def create_teacher_dataset(seed, batch_size, val_split):
         else:
             inputs = jnp.concatenate((inputs, x), axis=0)
             outputs = jnp.concatenate((outputs, y), axis=0)
-    
-    print(inputs.shape)
-    print(outputs.shape)
 
     inputs_py = np.array(inputs)
     outputs_py = np.array(outputs)

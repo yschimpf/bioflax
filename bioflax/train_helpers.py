@@ -5,6 +5,9 @@ from jax.nn import one_hot
 from tqdm import tqdm
 from flax.training import train_state
 import optax
+import matplotlib.pyplot as plt
+import torch
+import numpy as np
 from typing import Any
 
 def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
@@ -172,7 +175,47 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
     return loss_mean, acc_mean
 
 
-def pred_step(state, batch, seq_len, in_dim):
+def pred_step(state, batch, seq_len, in_dim, task):
   inputs, labels = prep_batch(batch, seq_len, in_dim)
   logits = state.apply_fn({'params': state.params}, inputs)
-  return jnp.squeeze(logits).argmax(axis=1)
+  if(task == "classification"):
+    return jnp.squeeze(logits).argmax(axis=1)
+  elif(task == "regression"):
+    return logits
+  else :
+    print("Task not supported")
+    return None
+
+def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
+    test_batch = next(iter(testloader))
+    pred = pred_step(state, test_batch, seq_len, in_dim, task)
+
+    fig, axs = plt.subplots(5, 5, figsize=(12, 12))
+    inputs, labels = test_batch
+    inputs = torch.reshape(inputs, (inputs.shape[0], 28, 28, 1))
+    print(inputs.shape)
+    for i, ax in enumerate(axs.flatten()):
+        ax.imshow(inputs[i, ..., 0], cmap='gray')
+        ax.set_title(f"label={pred[i]}")
+        ax.axis('off')
+    plt.show()
+
+def plot_regression_sample(testloader, state, seq_len, in_dim, task):
+    #labels sind blau
+    inputs_array = np.array([])
+    labels_array = np.array([])
+    pred_array = np.array([])
+    if in_dim != 1 | seq_len != 1:
+            print("Plotting only possible for 1D inputs")
+            return
+    for i in range(5):
+        test_batch = next(iter(testloader))
+        pred = pred_step(state, test_batch, seq_len, in_dim, task)
+        inputs, labels = test_batch
+        labels = labels
+        inputs_array = np.append(inputs_array, inputs)
+        labels_array = np.append(labels_array, labels)
+        pred_array = np.append(pred_array, pred)
+    plt.scatter(inputs_array.flatten(), labels_array.flatten(), label="True")
+    plt.scatter(inputs_array.flatten(), pred_array.flatten(), label="Pred")
+    plt.show()

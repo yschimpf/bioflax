@@ -5,8 +5,6 @@ from tqdm import tqdm
 from flax.training import train_state
 import optax
 from typing import Any
-import matplotlib.pyplot as plt
-import torch
 from .model import (
     BioNeuralNetwork, 
     BatchBioNeuralNetwork
@@ -17,7 +15,8 @@ from .train_helpers import (
     create_train_state,
     train_epoch,
     validate,
-    pred_step
+    plot_mnist_sample,
+    plot_regression_sample
 )
 from .dataloading import (
     create_dataset
@@ -62,12 +61,13 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "MSE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 2 #args.epochs
+    epochs = 20 #args.epochs
     mode = "bp" #args.mode
-    activations = ["relu", "relu"] #args.activations
+    activations = ["sigmoid", "sigmoid"] #args.activations
     hidden_layers = [40, 40] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
     dataset="teacher" #args.dataset
+    task = "regression" #args.task
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -203,16 +203,8 @@ def train(): #(args):
         wandb.run.summary["Best Test Loss"] = best_test_loss
         wandb.run.summary["Best Test Accuracy"] = best_test_acc
     
-    test_batch = next(iter(testloader))
-    pred = pred_step(state, test_batch, seq_len, in_dim)
-
-    fig, axs = plt.subplots(5, 5, figsize=(12, 12))
-    inputs, labels = test_batch
-    inputs = torch.reshape(inputs, (inputs.shape[0], 28, 28, 1))
-    print(inputs.shape)
-    for i, ax in enumerate(axs.flatten()):
-        ax.imshow(inputs[i, ..., 0], cmap='gray')
-        ax.set_title(f"label={pred[i]}")
-        ax.axis('off')
-    plt.show()
+    if(task == "classification"):
+        plot_mnist_sample(testloader, state, seq_len, in_dim, task)
+    elif (task == "regression"):
+        plot_regression_sample(testloader, state, seq_len, in_dim, task)
     

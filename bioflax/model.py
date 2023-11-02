@@ -280,7 +280,7 @@ class TeacherNetwork(nn.Module):
         x = nn.sigmoid(x)
         x = nn.Dense(32)(x)
         x = nn.sigmoid(x)
-        x = nn.Dense(10)(x)
+        x = nn.Dense(1)(x)
         return x
     
 BatchTeacher= nn.vmap(

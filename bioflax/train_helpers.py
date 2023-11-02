@@ -78,7 +78,9 @@ def get_loss(loss_function, logits, labels):
     ##print("Logits in get_loss: ", logits)
     #print("Labels shape in get loss: ", labels.shape)
     if(loss_function == "CE"):
-        return optax.softmax_cross_entropy_with_integer_labels(logits=logits, labels=labels).mean()
+        return optax.softmax_cross_entropy_with_integer_labels(logits=jnp.squeeze(logits), labels=labels).mean()
+    elif(loss_function == "MSE"):
+        return optax.l2_loss(jnp.squeeze(logits), jnp.squeeze(labels)).mean()
 
 def prep_batch(batch, seq_len, in_dim):
     """
@@ -94,6 +96,8 @@ def prep_batch(batch, seq_len, in_dim):
         input dimension of model
     """
     inputs, labels = batch
+    #print("Shape inputs in prep_batch:", inputs.shape)
+    #print("Shape labels in prep_batch:", labels.shape)
     #print("Shape in prep_batch:", inputs.shape)
     inputs = jnp.array(inputs.numpy()).astype(float)  # convert to jax
     labels = jnp.array(labels.numpy())  # convert to jax
@@ -131,7 +135,7 @@ def train_step(state, inputs, labels, loss_function):
         #print(inputs.shape)
         #with jax.checking_leaks():
         logits = state.apply_fn({'params': params}, inputs) #model.apply genau gleicher fehler der fix geht also nicht: hier vllt. model.apply aber dann muss ich glaub im model die attribute als parameter machen
-        loss = get_loss(loss_function, jnp.squeeze(logits), labels)
+        loss = get_loss(loss_function, logits, labels)
         return loss
     loss, grads = jax.value_and_grad(loss_fn)(state.params)
     state = state.apply_gradients(grads=grads)
@@ -144,10 +148,10 @@ def compute_accuracy(logits, label):
 @partial(jax.jit, static_argnums=(3))
 def eval_step(inputs, labels, state, loss_function):
     logits = state.apply_fn({"params": state.params}, inputs)
-    losses = get_loss(loss_function,jnp.squeeze(logits), labels)
+    losses = get_loss(loss_function, logits, labels)
     accs = None
     if loss_function == "CE":
-        accs = compute_accuracy(jnp.squeeze(logits), labels)
+        accs = compute_accuracy((jnp.squeeze(logits)), labels)
     return jnp.mean(losses), accs, logits
 
 
@@ -159,8 +163,13 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
         loss, acc, logits = eval_step(inputs, labels, state, loss_function)
         losses = jnp.append(losses, loss)
-        accuracies = jnp.append(accuracies, acc)
-    return jnp.mean(losses), jnp.mean(accuracies)
+        if loss_function == "CE":
+            accuracies = jnp.append(accuracies, acc)
+        loss_mean = jnp.mean(losses)
+    acc_mean = 10000000.
+    if loss_function == "CE":
+        acc_mean = jnp.mean(accuracies)
+    return loss_mean, acc_mean
 
 
 def pred_step(state, batch, seq_len, in_dim):

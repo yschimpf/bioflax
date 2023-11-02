@@ -60,10 +60,10 @@ def train(): #(args):
 
     # parameter initialization
     batch_size = 32 #args.batch_size
-    loss_fn = "CE" #args.loss_fun
+    loss_fn = "MSE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 0 #args.epochs
-    mode = "dfa" #args.mode
+    epochs = 2 #args.epochs
+    mode = "bp" #args.mode
     activations = ["relu", "relu"] #args.activations
     hidden_layers = [40, 40] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
@@ -202,7 +202,7 @@ def train(): #(args):
         wandb.run.summary["Best Epoch"] = best_epoch
         wandb.run.summary["Best Test Loss"] = best_test_loss
         wandb.run.summary["Best Test Accuracy"] = best_test_acc
-    """
+    
     test_batch = next(iter(testloader))
     pred = pred_step(state, test_batch, seq_len, in_dim)
 
@@ -215,4 +215,4 @@ def train(): #(args):
         ax.set_title(f"label={pred[i]}")
         ax.axis('off')
     plt.show()
-    """
+    

@@ -4,6 +4,7 @@ from flax import linen as nn
 import jax
 import jax.numpy as jnp
 from tqdm import tqdm
+import numpy as np
 from .model import (
     BatchTeacher
 )
@@ -40,13 +41,19 @@ def create_teacher_dataset(seed, batch_size, val_split):
     print(inputs.shape)
     print(outputs.shape)
 
+    inputs_py = np.array(inputs)
+    outputs_py = np.array(outputs)
+
+    inputs_tensor = torch.from_numpy(inputs_py)
+    outputs_tensor = torch.from_numpy(outputs_py)
+
     if seed is not None:
         rng = torch.Generator()
         rng.manual_seed(seed)
     else:
         rng = None
 
-    datalaoder = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs, outputs), batch_size=batch_size, shuffle=True, Generator = rng)
+    datalaoder = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_tensor, outputs_tensor), batch_size=batch_size, shuffle=True, generator = rng)
     return datalaoder, None, datalaoder, d_output, L, d_input, len(inputs)
 
    

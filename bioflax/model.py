@@ -151,7 +151,7 @@ class RandomDenseLinearDFAOutput(nn.Module):
             return nn.vjp(f, module, x)
 
         def bwd(vjp_fn, delta):
-            print("Shape of delta in DFA output: ", delta.shape)
+            #print("Shape of delta in DFA output: ", delta.shape)
             delta_params, _ = vjp_fn(delta)
             return (delta_params, delta)
         

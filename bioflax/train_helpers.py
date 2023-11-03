@@ -181,6 +181,7 @@ def pred_step(state, batch, seq_len, in_dim, task):
   if(task == "classification"):
     return jnp.squeeze(logits).argmax(axis=1)
   elif(task == "regression"):
+    print("Logits shape in pred_step: ", logits)
     return logits
   else :
     print("Task not supported")

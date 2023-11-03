@@ -25,6 +25,34 @@ class RandomDenseLinearDFAOutput(nn.Module):
         forward_module = nn.Dense(self.features)
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x)
+    
+    """
+    old version:
+    ____________
+    features : int
+    
+    @nn.compact
+    def __call__(self, x):
+        
+        forward_module = RandomDenseLinearFA(self.features)
+
+        def f(module, x):
+            return module(x)
+        
+        def fwd(module, x):
+            return nn.vjp(f, module, x)
+
+        def bwd(vjp_fn, delta):
+            delta_params, _ = vjp_fn(delta)
+            delta = forward_module.variables["params"]["B"] @ delta
+            delta_params = unfreeze(delta_params)
+            delta_params["params"]["B"] = delta_params["params"]["Dense_0"]["kernel"]
+            delta_params["params"] = freeze(delta_params["params"])
+            return (delta_params, delta)
+        
+        custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+        return custom_f(forward_module, x)
+    """
 
 class RandomDenseLinearDFAHiddenModified(nn.Module):
     features : int
@@ -87,6 +115,32 @@ class RandomDenseLinearDFAHidden(nn.Module):
         forward_module = nn.Dense(self.features)
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x)
+        """
+        old version:
+        ____________
+        features : int
+        final_output_dim : int
+        activation : Any = nn.relu
+
+        @nn.compact
+        def __call__(self, x):
+            
+            def f(module, x):
+                return self.activation(module(x))
+            
+            def fwd(module, x):
+                return nn.vjp(f, module, x)
+            
+            B = self.param("B", nn.initializers.lecun_normal(), (self.features,self.final_output_dim))
+
+            def bwd(vjp_fn, delta):
+                delta_params, _ = vjp_fn(B @ delta)
+                return (delta_params, delta)
+            
+            forward_module = nn.Dense(self.features)
+            custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+            return custom_f(forward_module, x)
+        """
     
 """  
 model = RandomDenseLinearDFAOutput(3)

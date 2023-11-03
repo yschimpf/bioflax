@@ -1,0 +1,45 @@
+{
+    "os": "macOS-10.16-x86_64-i386-64bit",
+    "python": "3.11.5",
+    "heartbeatAt": "2023-11-03T07:33:00.970117",
+    "startedAt": "2023-11-03T07:33:00.898551",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax/run_train.py",
+    "codePathLocal": "run_train.py",
+    "codePath": "run_train.py",
+    "git": {
+        "remote": "https://github.com/yschimpf/bioflax.git",
+        "commit": "3db77b82e45d4170ae152e078a4bfd85f08d5bb2"
+    },
+    "email": "yaschimpf@gmail.com",
+    "root": "/Users/yschimpf/Documents/ETH/HS2023/Bachelor Thesis/bioflax/bioflax",
+    "host": "student-net-hg-dock-1-b-507.intern.ethz.ch",
+    "username": "yschimpf",
+    "executable": "/Users/yschimpf/opt/anaconda3/envs/iml/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2400,
+        "min": 2400,
+        "max": 2400
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2400,
+            "min": 2400,
+            "max": 2400
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 228.27386474609375,
+            "used": 193.7830047607422
+        }
+    },
+    "memory": {
+        "total": 8.0
+    }
+}

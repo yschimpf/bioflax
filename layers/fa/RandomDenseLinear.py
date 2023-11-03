@@ -99,6 +99,33 @@ class RandomDenseLinearKP(nn.Module):
         custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
         return custom_f(forward_module, x)
     
+        """
+        old version:
+        ____________
+        @nn.compact
+        def __call__(self, x):
+
+            def f(module, x):
+                return module(x)
+            
+            def fwd(module, x):
+                return nn.vjp(f, module, x)
+            
+            B = self.param("B", nn.initializers.lecun_normal(), (jnp.shape(x)[-1],self.features))
+
+            def bwd(vjp_fn, delta):
+                delta_params, _ = vjp_fn(delta)
+                #print("Shape of B in FA: ", B.shape)
+                print("Shape of delta in FA: ", delta.shape)
+                print("Self.variables in FA ", self.variables)
+                delta_x = B @ delta.transpose()
+                return (delta_params, delta_x)
+            
+            forward_module = nn.Dense(self.features)
+            custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+            return custom_f(forward_module, x)
+        """
+    
 class RandomDenseLinearKPmodified(nn.Module):
     features : int
 

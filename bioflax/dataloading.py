@@ -10,50 +10,98 @@ from .model import (
 )
 
 
-def create_dataset(seed, batch_size, dataset, val_split):
+def create_dataset(seed, batch_size, dataset, val_split, input_dim, output_dim, L, train_set_size, test_set_size):
     if(dataset == "mnist"):
         return create_mnist_dataset(seed, batch_size, val_split)
     elif(dataset == "teacher"):
-        return create_teacher_dataset(seed, batch_size, val_split)
-
-def create_teacher_dataset(seed, batch_size, val_split):
+        return create_teacher_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size)
+    elif(dataset == "sinprop"):
+        return create_sinprop_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size)
+    else:
+        raise ValueError("Unknown dataset")
+    
+def create_sinprop_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size):
     _name_ = "teacher"
-    d_input = 1
-    d_output = 1
-    L = 1
+    d_input = input_dim
+    d_output = output_dim
+    L = L
+
+    rng = jax.random.PRNGKey(seed)
+    test_rng, train_rng = jax.random.split(rng, num=2)
+
+    train_dataset = generate_sample_set(None, None, train_rng, batch_size, d_input, L, train_set_size)
+    test_dataset = generate_sample_set(None, None, test_rng, batch_size, d_input, L, test_set_size)
+
+    train_loader, val_loader, test_loader, train_size = create_loaders(train_dataset, test_dataset, seed, val_split, batch_size)
+
+    return train_loader, val_loader, test_loader, train_size, d_output, L, d_input,
+
+
+
+def create_teacher_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size):
+    _name_ = "teacher"
+    d_input = input_dim
+    d_output = output_dim
+    L = L
 
     model = BatchTeacher()
     rng = jax.random.PRNGKey(seed)
-    model_rng, data_rng = jax.random.split(rng, num=2)
+    model_rng,  key = jax.random.split(rng, num=2)
+    test_rng, train_rng = jax.random.split(key)
+    
     params = model.init(model_rng, jnp.ones((batch_size, d_input, L)))['params']
 
-    for i in tqdm(range(50)):
+    train_dataset = generate_sample_set(model, params, train_rng, batch_size, d_input, L, train_set_size)
+    test_dataset = generate_sample_set(model, params, test_rng, batch_size, d_input, L, test_set_size)
+
+    train_loader, val_loader, test_loader, train_size = create_loaders(train_dataset, test_dataset, seed, val_split, batch_size)
+
+    return train_loader, val_loader, test_loader, train_size, d_output, L, d_input,
+    
+
+def generate_sample_set(model, params, data_rng, batch_size, d_input, L, size):
+    for i in tqdm(range(size)):
         data_rng, key = jax.random.split(data_rng)
-        x = jax.random.normal(key, shape=(batch_size, d_input, L))
-        y = model.apply({'params': params}, x)
+        if model == None:
+            x = nn.initializers.uniform(scale = 2 * jnp.pi)(key, shape=(batch_size, d_input, L)) - jnp.pi
+            y = jnp.sin(x)
+        else:
+            x = nn.initializers.uniform(scale = 2)(key, shape=(batch_size, d_input, L)) - 1.
+            y = model.apply({'params': params}, x)
         if(i == 0):
             inputs = x
             outputs = y
         else:
             inputs = jnp.concatenate((inputs, x), axis=0)
             outputs = jnp.concatenate((outputs, y), axis=0)
-
     inputs_py = np.array(inputs)
     outputs_py = np.array(outputs)
 
     inputs_tensor = torch.from_numpy(inputs_py)
     outputs_tensor = torch.from_numpy(outputs_py)
 
+    return torch.utils.data.TensorDataset(inputs_tensor, outputs_tensor)
+
+def create_loaders(train_dataset, test_dataset, seed, val_split, batch_size):
     if seed is not None:
         rng = torch.Generator()
         rng.manual_seed(seed)
     else:
         rng = None
 
-    datalaoder = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_tensor, outputs_tensor), batch_size=batch_size, shuffle=True, generator = rng)
-    return datalaoder, None, datalaoder, d_output, L, d_input, len(inputs)
+    if(val_split != 0.):
+        train_dataset, val_dataset = split_train_val(train_dataset, val_split, seed)
+    else:
+        val_dataset = None
 
-   
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator = rng)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, generator = rng)
+
+    if(val_dataset != None):
+        val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, generator = rng)
+    else:
+        val_loader = None
+    return train_loader, val_loader, test_loader, len(train_dataset) 
 
 def create_mnist_dataset(seed, batch_size, val_split):
     _name_ = "mnist"
@@ -71,29 +119,10 @@ def create_mnist_dataset(seed, batch_size, val_split):
     train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
     test_dataset = datasets.MNIST('data', train=False, download=True, transform=transform)
 
-    # Create generator for seeding random number draws
-    if seed is not None:
-        rng = torch.Generator()
-        rng.manual_seed(seed)
-    else:
-        rng = None
+    train_loader, val_loader, test_loader, train_size = create_loaders(train_dataset, test_dataset, seed, val_split, batch_size)
 
-    if(val_split != 0.):
-        test_dataset, val_dataset = split_train_val(test_dataset, val_split, seed)
-    else:
-        val_dataset = None
-    
-    # Create data loaders for the training and test datasets
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator = rng)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, generator = rng)
-    if(val_dataset != None):
-        val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, generator = rng)
-    else:
-        val_loader = None
-
-    train_size = len(train_dataset)
-
-    return train_loader, val_loader, test_loader, d_output, L, d_input, train_size
+    return train_loader, val_loader, test_loader, train_size, d_output, L, d_input,
+   
 
 def split_train_val(train_dataset, val_split, seed):
         """

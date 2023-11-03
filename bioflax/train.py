@@ -61,13 +61,19 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "MSE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 20 #args.epochs
-    mode = "bp" #args.mode
+    epochs = 500 #args.epochs
+    mode = "dfa" #args.mode
     activations = ["sigmoid", "sigmoid"] #args.activations
-    hidden_layers = [40, 40] #args.hidden_layers
+    hidden_layers = [64,64] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
-    dataset="teacher" #args.dataset
+    dataset="sinprop" #args.dataset
     task = "regression" #args.task
+    in_dim = 1 #args.in_dim (dim des vectors)
+    seq_len = 1 #args.seq_len (länge des vectors)
+    output_features = 1 #args.output_features
+    train_set_size = 50 #args.input_size => size of the teacher/sin train set to generate
+    test_set_size = 10 #args.input_size => size of the teacher/sin test set to generate
+
 
     if False: #args.use_wandb:
         # Make wandb config dictionary
@@ -94,11 +100,11 @@ def train(): #(args):
         trainloader,
         valloader,
         testloader,
+        train_size,
         output_features, #in case I let the output features be defined like this which makes sense I don't need to specify that as an argument in args anymore
         seq_len,
         in_dim,
-        train_size,
-    ) = create_dataset(seed=42, batch_size=32, dataset=dataset, val_split=val_split)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
+    ) = create_dataset(seed=42, batch_size=32, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
     print(f"[*] Starting training on mnist =>> Initializing...") # `{args.dataset}` =>> Initializing...")
 
     # Initialize model

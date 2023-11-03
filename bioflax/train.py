@@ -15,8 +15,7 @@ from .train_helpers import (
     create_train_state,
     train_epoch,
     validate,
-    plot_mnist_sample,
-    plot_regression_sample
+    plot_sample
 )
 from .dataloading import (
     create_dataset
@@ -59,20 +58,23 @@ def train(): #(args):
 
     # parameter initialization
     batch_size = 32 #args.batch_size
-    loss_fn = "MSE" #args.loss_fun
+    loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 10 #args.epochs
-    mode = "dfa" #args.mode
+    epochs = 1 #args.epochs
+    mode = "bp" #args.mode
     activations = ["sigmoid", "sigmoid"] #args.activations
     hidden_layers = [64,64] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
-    dataset="teacher" #args.dataset
-    task = "regression" #args.task
+    dataset="mnist" #args.dataset
+    task = "classification" #args.task
     in_dim = 1 #args.in_dim (dim des vectors)
     seq_len = 1 #args.seq_len (länge des vectors)
     output_features = 1 #args.output_features
     train_set_size = 50 #args.input_size => size of the teacher/sin train set to generate
     test_set_size = 10 #args.input_size => size of the teacher/sin test set to generate
+    plot = True #args.plot
+    lr = 0.1#args.lr # learning rate
+    momentum = 0#args.momentum # momentum
 
 
     if False: #args.use_wandb:
@@ -86,9 +88,6 @@ def train(): #(args):
     else:
         wandb.init(mode="offline")
 
-    lr = 0.1#args.lr # learning rate
-    momentum = 0#args.momentum # momentum
-
     # Set seed for randomness
     print("[*] Setting Randomness...")
     
@@ -101,20 +100,19 @@ def train(): #(args):
         valloader,
         testloader,
         train_size,
-        output_features, #in case I let the output features be defined like this which makes sense I don't need to specify that as an argument in args anymore
+        output_features, 
         seq_len,
         in_dim,
     ) = create_dataset(seed=42, batch_size=32, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
-    print(f"[*] Starting training on mnist =>> Initializing...") # `{args.dataset}` =>> Initializing...")
+    print(f"[*] Starting training on mnist =>> '{dataset}' Initializing...")
 
-    # Initialize model
+    #create
     model = BatchBioNeuralNetwork(
-        hidden_layers=hidden_layers, #args.hidden_layers,
-        activations=activations, #args.activations,
+        hidden_layers=hidden_layers,
+        activations=activations,
         features = output_features,
-        mode=mode, #args.mode,
+        mode=mode,
     )
-    #print(model)
 
     state = create_train_state(
         model = model,
@@ -122,25 +120,18 @@ def train(): #(args):
         lr = lr,
         momentum = momentum,
         in_dim = in_dim,
-        batch_size = batch_size, #args.batch_size,
+        batch_size = batch_size,
         seq_len = seq_len,
     )
 
-    #print(state)
-
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
-    steps_per_epoch = int(train_size / batch_size)
     for epoch in range(epochs): #(args.epochs):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
         
         state, train_loss = train_epoch(
             state, model, trainloader, seq_len, in_dim, loss_fn
         )
-
-        # HERE 25.10.2023 BZW. ich glaube es könnte hier wirklich besser sein hier vorerst mit 
-        # den training loops von dem quickstart tutorial zu arbeiten. wäre wichtiger das bis 
-        # abfahrt auf mnist zum laufen zu bringen. dementsprechend dann auch die datalaoder anpassen
 
         if valloader is not None:
             print(f"[*] Running Epoch {epoch + 1} Validation...")
@@ -209,8 +200,6 @@ def train(): #(args):
         wandb.run.summary["Best Test Loss"] = best_test_loss
         wandb.run.summary["Best Test Accuracy"] = best_test_acc
     
-    if(task == "classification"):
-        plot_mnist_sample(testloader, state, seq_len, in_dim, task)
-    elif (task == "regression"):
-        plot_regression_sample(testloader, state, seq_len, in_dim, task)
+    if(plot):
+        plot_sample(testloader, state, seq_len, in_dim, task)
     

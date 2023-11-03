@@ -33,9 +33,9 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     """
     dummy_input = jnp.ones((batch_size, in_dim, seq_len))
     params = model.init(rng, dummy_input)['params']
-    #print("params in train state: ", params["Dense_0"]["kernel"].shape)
-    tx = optax.sgd(learning_rate=lr, momentum=momentum) #make more generic later
+    tx = optax.sgd(learning_rate=lr, momentum=momentum)
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
+
 
 def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
     """
@@ -59,10 +59,11 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
     for batch in tqdm(trainloader):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
         state, loss = train_step(state, inputs, labels, loss_function)
-        batch_losses.append(loss)  # log loss value
+        batch_losses.append(loss)
 
     # Return average loss over batches
     return state, jnp.mean(jnp.array(batch_losses))
+
 
 def get_loss(loss_function, logits, labels):
     """
@@ -72,18 +73,16 @@ def get_loss(loss_function, logits, labels):
     __________
     loss_function : str
         identifier that slects the correct loss function
-    logits : -- have to look up --
+    logits : float32
         outputs of the network for the batch
-    labels : -- have to look up --
+    labels : int32
         labels for the batch
     """
-    ###print("Logits shape in get_loss: ", logits.shape)
-    ##print("Logits in get_loss: ", logits)
-    #print("Labels shape in get loss: ", labels.shape)
     if(loss_function == "CE"):
         return optax.softmax_cross_entropy_with_integer_labels(logits=jnp.squeeze(logits), labels=labels).mean()
     elif(loss_function == "MSE"):
         return optax.l2_loss(jnp.squeeze(logits), jnp.squeeze(labels)).mean()
+
 
 def prep_batch(batch, seq_len, in_dim):
     """
@@ -99,23 +98,10 @@ def prep_batch(batch, seq_len, in_dim):
         input dimension of model
     """
     inputs, labels = batch
-    #print("Shape inputs in prep_batch:", inputs.shape)
-    #print("Shape labels in prep_batch:", labels.shape)
-    #print("Shape in prep_batch:", inputs.shape)
-    inputs = jnp.array(inputs.numpy()).astype(float)  # convert to jax
-    labels = jnp.array(labels.numpy())  # convert to jax
-
-    # Make all batches have same sequence length
-    #num_pad = seq_len - inputs.shape[1]
-    #if num_pad > 0:
-    #    inputs = jnp.pad(inputs, ((0, 0), (0, num_pad)), "constant", constant_values=(0,))
-
-    # Inputs size is [n_batch, seq_len] or [n_batch, seq_len, in_dim].
-    # If there are not three dimensions and trailing dimension is not equal to in_dim then
-    # transform into one-hot.  This should be a fairly reliable fix.
-    #if (inputs.ndim < 3) and (inputs.shape[-1] != in_dim):
-    #    inputs = one_hot(inputs, in_dim)
+    inputs = jnp.array(inputs.numpy()).astype(float)
+    labels = jnp.array(labels.numpy()) 
     return inputs, labels
+
 
 @partial(jax.jit, static_argnums=(3))
 def train_step(state, inputs, labels, loss_function):
@@ -126,30 +112,54 @@ def train_step(state, inputs, labels, loss_function):
     __________
     state : TrainState
         current train state of the model
-    inputs : -- have to look up --
+    inputs : float32
         inputs for the batch
-    labels : -- have to look up --
+    labels : int32
         labels for the batch
     loss_function: str
         identifier to select loss function
     """
     def loss_fn(params):
-        #print(params)
-        #print(inputs.shape)
-        #with jax.checking_leaks():
-        logits = state.apply_fn({'params': params}, inputs) #model.apply genau gleicher fehler der fix geht also nicht: hier vllt. model.apply aber dann muss ich glaub im model die attribute als parameter machen
+        logits = state.apply_fn({'params': params}, inputs)
         loss = get_loss(loss_function, logits, labels)
         return loss
     loss, grads = jax.value_and_grad(loss_fn)(state.params)
     state = state.apply_gradients(grads=grads)
     return state, loss
 
+
 @partial(jnp.vectorize, signature="(c),()->()")
 def compute_accuracy(logits, label):
+    """
+    Computes the accuracy of the network outputs for a batch foe a classification task
+    ...
+    Parameters
+    __________
+    logits : float32
+        outputs of the network for the batch
+    label : int32
+        labels for the batch
+    """
     return jnp.mean(jnp.argmax(logits) == label)
+
 
 @partial(jax.jit, static_argnums=(3))
 def eval_step(inputs, labels, state, loss_function):
+    """
+    Performs a single evaluation step given a batch of data
+    ...
+    Parameters
+    __________
+    inputs : float32
+        inputs for the batch
+    labels : int32
+        labels for the batch
+    state : TrainState
+        current train state of the model
+    loss_function: str
+        identifier to select loss function
+    """
+
     logits = state.apply_fn({"params": state.params}, inputs)
     losses = get_loss(loss_function, logits, labels)
     accs = None
@@ -159,7 +169,23 @@ def eval_step(inputs, labels, state, loss_function):
 
 
 def validate(state, testloader, seq_len, in_dim, loss_function):
-    """Validation function that loops over batches"""
+    """
+    Validation function that loops over batches
+    ...
+    Parameters
+    __________
+    state : TrainState
+        current train state of the model
+    testloader : torch.utils.data.DataLoader
+        pytorch dataloader for the test set
+    seq_len : int
+        sequence length used when running model
+    in_dim : int
+        input dimension of model
+    loss_function: str
+        identifier to select loss function
+    """
+
     losses, accuracies = jnp.array([]), jnp.array([])
 
     for batch in tqdm(testloader):
@@ -169,25 +195,89 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
         if loss_function == "CE":
             accuracies = jnp.append(accuracies, acc)
         loss_mean = jnp.mean(losses)
+    
     acc_mean = 10000000.
     if loss_function == "CE":
         acc_mean = jnp.mean(accuracies)
     return loss_mean, acc_mean
 
 
+
 def pred_step(state, batch, seq_len, in_dim, task):
-  inputs, labels = prep_batch(batch, seq_len, in_dim)
-  logits = state.apply_fn({'params': state.params}, inputs)
-  if(task == "classification"):
-    return jnp.squeeze(logits).argmax(axis=1)
-  elif(task == "regression"):
-    print("Logits shape in pred_step: ", logits)
-    return logits
-  else :
-    print("Task not supported")
-    return None
+    """
+    Prediction function to obtain outputs for a batch of data
+    ...
+    Parameters
+    __________
+    state : TrainState
+        current train state of the model
+    batch : tuple
+        batch of data
+    seq_len : int
+        sequence length used when running model
+    in_dim : int
+        input dimension of model
+    task : str 
+        identifier for task
+    """
+
+    inputs, labels = prep_batch(batch, seq_len, in_dim)
+    logits = state.apply_fn({'params': state.params}, inputs)
+    if(task == "classification"):
+        return jnp.squeeze(logits).argmax(axis=1)
+    elif(task == "regression"):
+        print("Logits shape in pred_step: ", logits)
+        return logits
+    else :
+        print("Task not supported")
+        return None
+    
+
+def plot_sample(testloader, state, seq_len, in_dim, task):
+    """
+    Plots a sample of the test set
+    ...
+    Parameters
+    __________
+    testloader : torch.utils.data.DataLoader
+        pytorch dataloader for the test set
+    state : TrainState
+        current train state of the model
+    seq_len : int
+        sequence length used when running model
+    in_dim : int
+        input dimension of model
+    task : str
+        identifier for task
+    """
+
+    if(task == "classification"):
+        return plot_mnist_sample(testloader, state, seq_len, in_dim, task)
+    elif (task == "regression"):
+        return plot_regression_sample(testloader, state, seq_len, in_dim, task)
+    else:
+        print("Task not supported")
+        return None
+
 
 def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
+    """
+    Plots a sample of the test set for the MNIST dataset
+    ...
+    Parameters
+    __________
+    testloader : torch.utils.data.DataLoader
+        pytorch dataloader for the test set
+    state : TrainState
+        current train state of the model
+    seq_len : int
+        sequence length used when running model
+    in_dim : int
+        input dimension of model
+    task : str
+        identifier for task
+    """
+
     test_batch = next(iter(testloader))
     pred = pred_step(state, test_batch, seq_len, in_dim, task)
 
@@ -201,8 +291,25 @@ def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
         ax.axis('off')
     plt.show()
 
+
 def plot_regression_sample(testloader, state, seq_len, in_dim, task):
-    #labels sind blau
+    """
+    Plots a sample of the test set for the regression task
+    ...
+    Parameters
+    __________
+    testloader : torch.utils.data.DataLoader
+        pytorch dataloader for the test set
+    state : TrainState
+        current train state of the model
+    seq_len : int
+        sequence length used when running model
+    in_dim : int
+        input dimension of model
+    task : str
+        identifier for task
+    """
+    
     inputs_array = np.array([])
     labels_array = np.array([])
     pred_array = np.array([])

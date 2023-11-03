@@ -11,6 +11,30 @@ from .model import (
 
 
 def create_dataset(seed, batch_size, dataset, val_split, input_dim, output_dim, L, train_set_size, test_set_size):
+    """
+    Function that creates asked dataset. Returns pytorch dataloaders.
+    ...
+    Parameters
+    __________
+    seed : int
+        seed for randomness
+    batch_size : int
+        size of batches
+    dataset : str
+        identifier for dataset
+    val_split : float
+        fraction of the training set used for validation
+    input_dim : int
+        dimensionality of inputs
+    output_dim : int
+        dimensionality of outputs
+    L : int
+        length of inputs
+    train_set_size : int
+        size of the training set in terms of batches
+    test_set_size : int
+        size of the test set in terms of batches
+    """
     if(dataset == "mnist"):
         return create_mnist_dataset(seed, batch_size, val_split)
     elif(dataset == "teacher" or dataset == "sinprop"):
@@ -20,6 +44,18 @@ def create_dataset(seed, batch_size, dataset, val_split, input_dim, output_dim, 
     
 
 def create_mnist_dataset(seed, batch_size, val_split):
+    """
+    Returns pytorch train-, test-, and validation-dataloaders for mnist dataset.
+    ...
+    Parameters
+    __________
+    seed : int
+        seed for randomness
+    batch_size : int
+        size of batches
+    val_split : float
+        fraction of the training set used for validation
+    """
     _name_ = "mnist"
     d_input = 1
     d_output = 10
@@ -40,6 +76,31 @@ def create_mnist_dataset(seed, batch_size, val_split):
 
 
 def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size, dataset):
+    """
+    Returns pytorch train-, test-, and validation-dataloaders for either a Teacher Network dataset or a sinus dataset.
+    ...
+    Parameters
+    __________
+    seed : int
+        seed for randomness
+    batch_size : int
+        size of batches
+    val_split : float
+        fraction of the training set used for validation
+    input_dim : int
+        dimensionality of inputs
+    output_dim : int
+        dimensionality of outputs
+    L : int
+        length of inputs
+    train_set_size : int
+        size of the training set in terms of batches
+    test_set_size : int
+        size of the test set in terms of batches
+    dataset : str
+        identifier for dataset
+    """
+
     d_input = input_dim
     d_output = output_dim
     L = L
@@ -54,7 +115,7 @@ def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L,
     elif(dataset == "sinprop"):
         model = None
         params = None
-        
+
     train_dataset = generate_sample_set(model, params, train_rng, batch_size, d_input, L, train_set_size)
     test_dataset = generate_sample_set(model, params, test_rng, batch_size, d_input, L, test_set_size)
 
@@ -64,6 +125,23 @@ def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L,
 
 
 def create_loaders(train_dataset, test_dataset, seed, val_split, batch_size):
+    """
+    Returns pytorch train-, test-, and validation-dataloaders for given pytorch datasets.
+    ...
+    Parameters
+    __________
+    train_dataset : torch.utils.data.Dataset
+        pytorch dataset for training
+    test_dataset : torch.utils.data.Dataset
+        pytorch dataset for testing
+    seed : int
+        seed for randomness
+    val_split : float
+        fraction of the training set used for validation
+    batch_size : int
+        size of batches
+    """
+
     if seed is not None:
         rng = torch.Generator()
         rng.manual_seed(seed)
@@ -86,6 +164,27 @@ def create_loaders(train_dataset, test_dataset, seed, val_split, batch_size):
 
 
 def generate_sample_set(model, params, data_rng, batch_size, d_input, L, size):
+    """
+    Returns pytorch dataset for given model and parameters and for sinus function if no model is given.
+    ...
+    Parameters
+    __________
+    model : Any
+        model to be trained
+    params : Any
+        parameters of model
+    data_rng : jnp.PRNGKey
+        key for randomness
+    batch_size : int
+        size of batches
+    d_input : int
+        dimensionality of inputs
+    L : int
+        length of inputs
+    size : int
+        size of dataset in terms of batches
+    """
+
     for i in tqdm(range(size)):
         data_rng, key = jax.random.split(data_rng)
         if model == None:
@@ -112,6 +211,15 @@ def generate_sample_set(model, params, data_rng, batch_size, d_input, L, size):
 def split_train_val(train_dataset, val_split, seed):
         """
         Randomly split self.dataset_train into a new (self.dataset_train, self.dataset_val) pair.
+        ...
+        Parameters
+        __________
+        train_dataset : torch.utils.data.Dataset
+            pytorch dataset for training
+        val_split : float
+            fraction of the training set used for validation
+        seed : int
+            seed for randomness
         """
         train_len = int(len(train_dataset) * (1.0 - val_split))
         train_dataset, val_dataset = torch.utils.data.random_split(

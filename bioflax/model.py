@@ -97,7 +97,6 @@ class RandomDenseLinearDFAOutput(nn.Module):
             return nn.vjp(f, module, x)
 
         def bwd(vjp_fn, delta):
-            #print("Shape of delta in DFA output: ", delta.shape)
             delta_params, _ = vjp_fn(delta)
             return (delta_params, delta)
         
@@ -134,7 +133,6 @@ class RandomDenseLinearDFAHidden(nn.Module):
             primals_out, vjp_fun = nn.vjp(f, module, x, B)
             return primals_out, (vjp_fun, B)
 
-        #problem: even if I pass the delta directly further the activation functions derviative will still be applied and passed (without applying it however I don't get that information here)
         def bwd(vjp_fn_B, delta):
             vjp_fn, B = vjp_fn_B
             delta_params, _, _ = vjp_fn((B @ delta.transpose()).transpose())
@@ -194,6 +192,10 @@ class BioNeuralNetwork(nn.Module):
         return x
     
 class TeacherNetwork(nn.Module):
+    """
+    Creates a simple Teacher Network to train a student network.
+    """
+
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(64)(x)

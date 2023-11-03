@@ -61,12 +61,12 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "MSE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 500 #args.epochs
+    epochs = 10 #args.epochs
     mode = "dfa" #args.mode
     activations = ["sigmoid", "sigmoid"] #args.activations
     hidden_layers = [64,64] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
-    dataset="sinprop" #args.dataset
+    dataset="teacher" #args.dataset
     task = "regression" #args.task
     in_dim = 1 #args.in_dim (dim des vectors)
     seq_len = 1 #args.seq_len (länge des vectors)

@@ -1,14 +1,14 @@
-from functools import partial
 import jax
 import jax.numpy as jnp
-from jax.nn import one_hot
-from tqdm import tqdm
-from flax.training import train_state
 import optax
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
 from typing import Any
+from jax.nn import one_hot
+from tqdm import tqdm
+from flax.training import train_state
+from functools import partial
 
 def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     """

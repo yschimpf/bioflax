@@ -1,10 +1,10 @@
 import torch
-from torchvision import datasets, transforms
-from flax import linen as nn
 import jax
 import jax.numpy as jnp
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
+from torchvision import datasets, transforms
+from flax import linen as nn
 from .model import (
     BatchTeacher
 )

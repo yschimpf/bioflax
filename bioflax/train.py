@@ -1,16 +1,9 @@
-import jax
+import wandb
 from jax import random
-import jax.numpy as jnp
-from tqdm import tqdm
-from flax.training import train_state
-import optax
 from typing import Any
 from .model import (
-    BioNeuralNetwork, 
     BatchBioNeuralNetwork
 )
-import wandb
-from functools import partial
 from .train_helpers import (
     create_train_state,
     train_epoch,

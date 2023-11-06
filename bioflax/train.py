@@ -55,10 +55,10 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 10 #args.epochs
+    epochs = 2 #args.epochs
     mode = "fa" #args.mode
     activations = ["sigmoid", "sigmoid"] #args.activations
-    hidden_layers = [100,100] #args.hidden_layers
+    hidden_layers = [5, 4] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
     dataset="mnist" #args.dataset
     task = "classification" #args.task
@@ -73,6 +73,7 @@ def train(): #(args):
     compute_grad_alignments = True #args.compute_grad_alignments
     project = "test_project" #args.wandb_project
     use_wandb = True #args.use_wandb
+    n = 1; #args.n (number of batches to average alignment over)
 
 
     if use_wandb: #args.use_wandb:
@@ -144,15 +145,20 @@ def train(): #(args):
     #print("bp state: ", bp_state)
     #print("state: ", state)
 
-    alignment = compute_weight_alignment(state)
+    # alignment = compute_weight_alignment(state)
+    # val_loss, val_acc = validate(state, valloader, seq_len, in_dim, loss_fn)
         
-    metrics = {
-        "Training Loss": None,
-        "Val Loss": None,
-        "Val Accuracy": None,
-        "Alignment": alignment,
-    }
-    wandb.log(metrics)
+    # metrics = {
+    #     "Training Loss": 1.,  #TODO: ask whether ok to set 1
+    #     "Val Loss": None,
+    #     "Val Accuracy": None,
+    #     "Alignment": alignment,
+    # }
+    # if valloader is not None:
+    #     test_loss, test_acc = validate(state, testloader, seq_len, in_dim, loss_fn)
+    #     metrics["Test Loss"] = test_loss
+    #     metrics["Test Accuracy"] = test_acc
+    # wandb.log(metrics)
 
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
@@ -160,8 +166,8 @@ def train(): #(args):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
 
         
-        state, train_loss, alignment = train_epoch(
-            state, model, trainloader, seq_len, in_dim, loss_fn
+        state, train_loss, alignment, bias_grad_alignments, wandb_grad_al_per_layer, wandb_grad_total = train_epoch(
+            state, bp_model, trainloader, seq_len, in_dim, loss_fn, n
         )
 
         if valloader is not None:
@@ -220,10 +226,16 @@ def train(): #(args):
             "Val Loss": val_loss,
             "Val Accuracy": val_acc,
             "Alignment": alignment,
+            "Gradient Alignment": wandb_grad_total,
         }
         if valloader is not None:
             metrics["Test Loss"] = test_loss
             metrics["Test Accuracy"] = test_acc
+        for i, al in enumerate(bias_grad_alignments):
+            metrics[f"Alignment bias gradient layer {i}"] = al
+        for i, al in enumerate(wandb_grad_al_per_layer):
+            metrics[f"Alignment gradient layer {i}"] = al
+        
         wandb.log(metrics)
 
         wandb.run.summary["Best Val Loss"] = best_loss

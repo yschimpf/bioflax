@@ -4,6 +4,8 @@ import optax
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+import flax.linen as nn
+import flax
 from typing import Any
 from jax.nn import one_hot
 from tqdm import tqdm
@@ -37,7 +39,7 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 
-def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
+def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
     """
     Training function for an epoch that loops over batches.
     ...
@@ -55,36 +57,132 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
         identifier to select loss function
     """
     batch_losses = []
+    bias_alignemnts = []
+    wandb_grad_al_per_layer = []
+    wandb_grad_total = []
 
-    for batch in tqdm(trainloader):
+    for i, batch in enumerate(tqdm(trainloader)):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
         state, loss, grads = train_step(state, inputs, labels, loss_function)
         batch_losses.append(loss)
-        
+        if i < n: 
+            def loss_comp(params):
+                logits = model.apply({'params': params}, inputs)
+                loss = get_loss(loss_function, logits, labels)
+                return loss
+            loss_, grads_ = jax.value_and_grad(loss_comp)(reorganize_dict({'params': state.params})["params"])
+            bias_alignment = compute_layerwise_alignments(flatten_arrays_layerwise(extract_gradients(grads_, ['bias'], False)), flatten_arrays_layerwise(extract_gradients(grads, ['bias'], False)))
+            bias_alignemnts.append(bias_alignment)
+
+            wandb_alignment_per_layer = compute_layerwise_alignments(flatten_arrays_layerwise(extract_gradients(grads_, ['bias','kernel'], True)), flatten_arrays_layerwise(extract_gradients(grads, ['bias', 'kernel'], True)))
+            wandb_grad_al_per_layer.append(wandb_alignment_per_layer)
+
+            wandb_alignment = compute_wandb_alignment(grads_, grads)
+            wandb_grad_total.append(wandb_alignment)
+
+
+    #problem zum merken, wenn man hier true macht, dann hat die matrix in dem true case iwie andere dimensionen, sodass die xtract funktion dann failt.
     alignment = compute_weight_alignment(state)
-
     
-    
-
+    #print("bias_alignemnts: ", bias_alignemnts)
+    bias_alignemnts = entrywise_average(bias_alignemnts)
+    wandb_grad_al_per_layer = entrywise_average(wandb_grad_al_per_layer)
+    #print("bias_alignemnts: ", bias_alignemnts)
     # Return average loss over batches
-    return state, jnp.mean(jnp.array(batch_losses)), alignment
+    return state, jnp.mean(jnp.array(batch_losses)), alignment, bias_alignemnts, wandb_grad_al_per_layer, jnp.mean(jnp.array(wandb_grad_total))
 
+@jax.jit
+def compute_wandb_alignment(grads_, grads):
+    extract_grads = extract_gradients(grads, ['bias', 'kernel'], False)
+    extract_grads_ = extract_gradients(grads_, ['bias', 'kernel'], False)
+    print("grads_: ", extract_grads_)
+    print("grads: ", extract_grads)
+    return compute_alignment(flatten_arrays(extract_grads_),
+                              flatten_arrays(extract_grads))
+            
+
+def entrywise_average(array_of_arrays):
+    average_array = np.zeros_like(array_of_arrays[0])
+    for arr in array_of_arrays:
+        average_array += arr
+    
+    average_array = average_array/len(array_of_arrays)
+    
+    return average_array
+
+def merge_consecutive_pairs(array_list):
+    # Ensure there is an even number of elements to merge in pairs
+    if len(array_list) % 2 != 0:
+        raise ValueError("The number of arrays should be even to merge in pairs.")
+
+    # Merge each consecutive pair
+    merged_list = []
+    for i in range(0, len(array_list), 2):
+        a = array_list[i]
+        b = array_list[i+1].T
+        
+        # Ensure both arrays have the same number of dimensions
+        if a.ndim < b.ndim:
+            a = a[..., jnp.newaxis]
+        elif a.ndim > b.ndim:
+            b = b[..., jnp.newaxis]
+        
+        merged_list.append(jnp.concatenate((a, b), axis=1))
+    
+    return merged_list
+
+@partial(jax.jit, static_argnums=(3))
+def train_step(state, inputs, labels, loss_function):
+    """
+    Performs a single training step given a batch of data
+    ...
+    Parameters
+    __________
+    state : TrainState
+        current train state of the model
+    inputs : float32
+        inputs for the batch
+    labels : int32
+        labels for the batch
+    loss_function: str
+        identifier to select loss function
+    """
+    def loss_fn(params):
+        logits = state.apply_fn({'params': params}, inputs)
+        loss = get_loss(loss_function, logits, labels)
+        return loss
+    loss, grads = jax.value_and_grad(loss_fn)(state.params)
+    state = state.apply_gradients(grads=grads)
+    return state, loss, grads
+
+@jax.jit
 def compute_weight_alignment(state):
-    kernels, bs = extract_kernel_and_B_arrays(state.params)
+    kernels, bs = extract_kernel_and_B_arrays(state.params, False)
     return compute_alignment(flatten_arrays(kernels), flatten_arrays(bs))
 
 def extract_arrays(d, key, collected_arrays):
     if isinstance(d, dict):
         for k, v in d.items():
-            if k == key:
+            if k in key:
                 collected_arrays.append(v)
             else:
                 extract_arrays(v, key, collected_arrays)
     return collected_arrays
 
-def extract_kernel_and_B_arrays(param_dict):
-    kernels = extract_arrays(param_dict, 'kernel', [])
-    Bs = extract_arrays(param_dict, 'B', [])
+def extract_gradients(param_dict, keys, merge):
+    kernels = extract_arrays(param_dict, keys, [])
+    kernels = merge_consecutive_pairs(kernels) if merge else kernels
+    return kernels
+
+def extract_kernel_and_B_arrays(param_dict, merge):
+    kernels = extract_arrays(param_dict, ['kernel'], [])
+    Bs = extract_arrays(param_dict, ['B'], [])
+    if kernels:
+        kernels = kernels[1:]
+    if Bs:
+        Bs = Bs[1:]
+    kernels = merge_consecutive_pairs(kernels) if merge else kernels
+    Bs = merge_consecutive_pairs(Bs) if merge else Bs
     return kernels, Bs
 
 def flatten_array(arr):
@@ -97,12 +195,45 @@ def concatenate_arrays(array_list):
     concatenated_list = [item for array in array_list for item in array]
     return concatenated_list
 
+def flatten_arrays_layerwise(arrays):
+    list = [flatten_array(x) for x in arrays]
+    return list
+
 def flatten_arrays(arrays):
     list = [flatten_array(x) for x in arrays]
     return concatenate_arrays(list)
 
+def compute_layerwise_alignments(as_, bs_):
+    alignments = [compute_alignment(a, b) for a, b in zip(as_, bs_)]
+    return alignments
+
+def reorganize_dict(input_dict):
+    new_dict = {'params': {}}
+
+    for layer_key, layer_val in input_dict['params'].items():
+        # Extract layer number
+        layer_num = layer_key.split('_')[-1]
+        
+        # Iterate over items in each layer
+        for param_key, param_val in layer_val.items():
+            # Skip 'B' entries
+            if param_key == 'B':
+                continue
+            
+            # Construct new key as 'Dense_x'
+            new_key = param_key.split('_')[0] + '_' + layer_num
+
+            # Add or update the new dictionary
+            if new_key not in new_dict['params']:
+                new_dict['params'][new_key] = {}
+            new_dict['params'][new_key] = param_val
+
+    return new_dict
+
 def compute_alignment(a,b):
-    return np.dot(a,b)/(np.linalg.norm(a)*np.linalg.norm(b))
+    a = jnp.array(a)
+    b = jnp.array(b)
+    return jnp.dot(a,b)/(jnp.linalg.norm(a)*jnp.linalg.norm(b))
 
 def get_loss(loss_function, logits, labels):
     """
@@ -142,29 +273,7 @@ def prep_batch(batch, seq_len, in_dim):
     return inputs, labels
 
 
-@partial(jax.jit, static_argnums=(3))
-def train_step(state, inputs, labels, loss_function):
-    """
-    Performs a single training step given a batch of data
-    ...
-    Parameters
-    __________
-    state : TrainState
-        current train state of the model
-    inputs : float32
-        inputs for the batch
-    labels : int32
-        labels for the batch
-    loss_function: str
-        identifier to select loss function
-    """
-    def loss_fn(params):
-        logits = state.apply_fn({'params': params}, inputs)
-        loss = get_loss(loss_function, logits, labels)
-        return loss
-    loss, grads = jax.value_and_grad(loss_fn)(state.params)
-    state = state.apply_gradients(grads=grads)
-    return state, loss, grads
+
 
 
 @partial(jnp.vectorize, signature="(c),()->()")

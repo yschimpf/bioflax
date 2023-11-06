@@ -1,0 +1,1 @@
+{"Training Loss": null, "Val Loss": null, "Val Accuracy": 10000000.0, "Alignment": null, "Test Loss": null, "Test Accuracy": 10000000.0, "_timestamp": 1699266986.1193159, "_runtime": 13.824680805206299, "_step": 9, "Best Val Loss": Infinity, "Best Val Accuracy": 10000000.0, "Best Epoch": 0, "Best Test Loss": Infinity, "Best Test Accuracy": 10000000.0, "_wandb": {"runtime": 18}}

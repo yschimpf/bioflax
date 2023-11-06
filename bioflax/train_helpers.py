@@ -58,12 +58,46 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
 
     for batch in tqdm(trainloader):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
-        state, loss = train_step(state, inputs, labels, loss_function)
+        state, loss, grads = train_step(state, inputs, labels, loss_function)
+        kernels, bs = extract_kernel_and_B_arrays(state.params)
         batch_losses.append(loss)
+        
+    alignment = compute_alignment(flatten_arrays(kernels), flatten_arrays(bs))
 
     # Return average loss over batches
-    return state, jnp.mean(jnp.array(batch_losses))
+    return state, jnp.mean(jnp.array(batch_losses)), alignment
 
+
+def extract_arrays(d, key, collected_arrays):
+    if isinstance(d, dict):
+        for k, v in d.items():
+            if k == key:
+                collected_arrays.append(v)
+            else:
+                extract_arrays(v, key, collected_arrays)
+    return collected_arrays
+
+def extract_kernel_and_B_arrays(param_dict):
+    kernels = extract_arrays(param_dict, 'kernel', [])
+    Bs = extract_arrays(param_dict, 'B', [])
+    return kernels, Bs
+
+def flatten_array(arr):
+    # Use the reshape method to flatten the array
+    flattened = arr.reshape(-1)
+    return flattened
+
+def concatenate_arrays(array_list):
+    # Use a list comprehension to concatenate the arrays
+    concatenated_list = [item for array in array_list for item in array]
+    return concatenated_list
+
+def flatten_arrays(arrays):
+    list = [flatten_array(x) for x in arrays]
+    return concatenate_arrays(list)
+
+def compute_alignment(a,b):
+    return np.dot(a,b)/(np.linalg.norm(a)*np.linalg.norm(b))
 
 def get_loss(loss_function, logits, labels):
     """
@@ -125,7 +159,7 @@ def train_step(state, inputs, labels, loss_function):
         return loss
     loss, grads = jax.value_and_grad(loss_fn)(state.params)
     state = state.apply_gradients(grads=grads)
-    return state, loss
+    return state, loss, grads
 
 
 @partial(jnp.vectorize, signature="(c),()->()")
@@ -226,7 +260,6 @@ def pred_step(state, batch, seq_len, in_dim, task):
     if(task == "classification"):
         return jnp.squeeze(logits).argmax(axis=1)
     elif(task == "regression"):
-        print("Logits shape in pred_step: ", logits)
         return logits
     else :
         print("Task not supported")
@@ -327,3 +360,5 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task):
     plt.scatter(inputs_array.flatten(), labels_array.flatten(), label="True")
     plt.scatter(inputs_array.flatten(), pred_array.flatten(), label="Pred")
     plt.show()
+
+

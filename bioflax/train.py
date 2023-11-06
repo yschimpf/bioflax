@@ -53,10 +53,10 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 1 #args.epochs
-    mode = "bp" #args.mode
+    epochs = 5 #args.epochs
+    mode = "fa" #args.mode
     activations = ["sigmoid", "sigmoid"] #args.activations
-    hidden_layers = [64,64] #args.hidden_layers
+    hidden_layers = [100,100] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
     dataset="mnist" #args.dataset
     task = "classification" #args.task
@@ -68,15 +68,18 @@ def train(): #(args):
     plot = True #args.plot
     lr = 0.1#args.lr # learning rate
     momentum = 0#args.momentum # momentum
+    compute_grad_alignments = True #args.compute_grad_alignments
+    project = "test_project" #args.wandb_project
+    use_wandb = True #args.use_wandb
 
 
-    if False: #args.use_wandb:
+    if use_wandb: #args.use_wandb:
         # Make wandb config dictionary
         wandb.init(
-            project=args.wandb_project,
+            project=project,
             job_type="model_training",
-            config=vars(args),
-            entity=args.wandb_entity,
+            config={}, #vars(args),
+            #entity=args.wandb_entity,
         )
     else:
         wandb.init(mode="offline")
@@ -99,13 +102,14 @@ def train(): #(args):
     ) = create_dataset(seed=42, batch_size=32, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size)#(seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
     print(f"[*] Starting training on mnist =>> '{dataset}' Initializing...")
 
-    #create
+    # model to run experiments with
     model = BatchBioNeuralNetwork(
         hidden_layers=hidden_layers,
         activations=activations,
         features = output_features,
         mode=mode,
     )
+
 
     state = create_train_state(
         model = model,
@@ -117,12 +121,33 @@ def train(): #(args):
         seq_len = seq_len,
     )
 
+    # bp model to compute gradient alignments
+    bp_model = BatchBioNeuralNetwork(
+        hidden_layers=hidden_layers,
+        activations=activations,
+        features = output_features,
+        mode="bp",
+    )
+
+    bp_state = create_train_state(
+        model = bp_model,
+        rng = init_rng,
+        lr = lr,
+        momentum = momentum,
+        in_dim = in_dim,
+        batch_size = batch_size,
+        seq_len = seq_len,
+    )
+
+    #print("bp state: ", bp_state)
+    #print("state: ", state)
+
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
     for epoch in range(epochs): #(args.epochs):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
         
-        state, train_loss = train_epoch(
+        state, train_loss, alignment = train_epoch(
             state, model, trainloader, seq_len, in_dim, loss_fn
         )
 
@@ -139,7 +164,8 @@ def train(): #(args):
                 f"-- Val Loss: {val_loss:.5f} "
                 f"-- Test Loss: {test_loss:.5f}\n"
                 f"\tVal Accuracy: {val_acc:.4f} "
-                f"-- Test Accuracy: {test_acc:.4f}"
+                f"-- Test Accuracy: {test_acc:.4f} "
+                f"-- Alignment: {alignment}"
             )
 
         else:
@@ -180,7 +206,7 @@ def train(): #(args):
             "Training Loss": train_loss,
             "Val Loss": val_loss,
             "Val Accuracy": val_acc,
-            "Count": count,
+            "Alignment": alignment,
         }
         if valloader is not None:
             metrics["Test Loss"] = test_loss

@@ -59,14 +59,19 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function):
     for batch in tqdm(trainloader):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
         state, loss, grads = train_step(state, inputs, labels, loss_function)
-        kernels, bs = extract_kernel_and_B_arrays(state.params)
         batch_losses.append(loss)
         
-    alignment = compute_alignment(flatten_arrays(kernels), flatten_arrays(bs))
+    alignment = compute_weight_alignment(state)
+
+    
+    
 
     # Return average loss over batches
     return state, jnp.mean(jnp.array(batch_losses)), alignment
 
+def compute_weight_alignment(state):
+    kernels, bs = extract_kernel_and_B_arrays(state.params)
+    return compute_alignment(flatten_arrays(kernels), flatten_arrays(bs))
 
 def extract_arrays(d, key, collected_arrays):
     if isinstance(d, dict):

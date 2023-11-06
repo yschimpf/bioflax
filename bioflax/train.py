@@ -8,7 +8,8 @@ from .train_helpers import (
     create_train_state,
     train_epoch,
     validate,
-    plot_sample
+    plot_sample,
+    compute_weight_alignment
 )
 from .dataloading import (
     create_dataset
@@ -38,6 +39,7 @@ args needs:
     - args.epochs (int)
     - args.loss_fun (string of loss function name)
     - args.val_split (float) (0. corresponds to val_set = None)
+    - compute weight alignment
 
 """
 
@@ -53,7 +55,7 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 5 #args.epochs
+    epochs = 10 #args.epochs
     mode = "fa" #args.mode
     activations = ["sigmoid", "sigmoid"] #args.activations
     hidden_layers = [100,100] #args.hidden_layers
@@ -142,10 +144,21 @@ def train(): #(args):
     #print("bp state: ", bp_state)
     #print("state: ", state)
 
+    alignment = compute_weight_alignment(state)
+        
+    metrics = {
+        "Training Loss": None,
+        "Val Loss": None,
+        "Val Accuracy": None,
+        "Alignment": alignment,
+    }
+    wandb.log(metrics)
+
     #Training Loop over epochs (bis hierhin hat mal alles funktioniert)
     best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
     for epoch in range(epochs): #(args.epochs):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
+
         
         state, train_loss, alignment = train_epoch(
             state, model, trainloader, seq_len, in_dim, loss_fn

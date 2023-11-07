@@ -71,10 +71,10 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
                 loss = get_loss(loss_function, logits, labels)
                 return loss
             loss_, grads_ = jax.value_and_grad(loss_comp)(reorganize_dict({'params': state.params})["params"])
-            bias_alignment = compute_layerwise_alignments(flatten_arrays_layerwise(extract_gradients(grads_, ['bias'], False)), flatten_arrays_layerwise(extract_gradients(grads, ['bias'], False)))
+            bias_alignment = compute_bias_grad_layerwise(grads_, grads)
             bias_alignemnts.append(bias_alignment)
 
-            wandb_alignment_per_layer = compute_layerwise_alignments(flatten_arrays_layerwise(extract_gradients(grads_, ['bias','kernel'], True)), flatten_arrays_layerwise(extract_gradients(grads, ['bias', 'kernel'], True)))
+            wandb_alignment_per_layer = compute_grad_al_layerwise(grads_, grads)
             wandb_grad_al_per_layer.append(wandb_alignment_per_layer)
 
             wandb_alignment = compute_wandb_alignment(grads_, grads)
@@ -82,23 +82,40 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
 
 
     #problem zum merken, wenn man hier true macht, dann hat die matrix in dem true case iwie andere dimensionen, sodass die xtract funktion dann failt.
-    alignment = compute_weight_alignment(state)
+    alignment = compute_weight_alignment_layerwise(state)
+    print(alignment)
     
     #print("bias_alignemnts: ", bias_alignemnts)
     bias_alignemnts = entrywise_average(bias_alignemnts)
     wandb_grad_al_per_layer = entrywise_average(wandb_grad_al_per_layer)
+    print("wandb_grad_total: ", wandb_grad_total)
     #print("bias_alignemnts: ", bias_alignemnts)
     # Return average loss over batches
     return state, jnp.mean(jnp.array(batch_losses)), alignment, bias_alignemnts, wandb_grad_al_per_layer, jnp.mean(jnp.array(wandb_grad_total))
 
 @jax.jit
+def compute_grad_al_layerwise(grads_, grads):
+    flattened_grads_ = flatten_arrays_layerwise(extract_gradients(grads_, ['bias', 'kernel'], True))
+    flattened_grads = flatten_arrays_layerwise(extract_gradients(grads, ['bias', 'kernel'], True))
+    return compute_layerwise_alignments(flattened_grads_, flattened_grads)
+
+@jax.jit
+def compute_bias_grad_layerwise(grads_, grads):
+    flattened_grads_ = flatten_arrays_layerwise(extract_gradients(grads_, ['bias'], False))
+    flattened_grads = flatten_arrays_layerwise(extract_gradients(grads, ['bias'], False))
+    return compute_layerwise_alignments(flattened_grads_, flattened_grads)
+
+@jax.jit
 def compute_wandb_alignment(grads_, grads):
     extract_grads = extract_gradients(grads, ['bias', 'kernel'], False)
     extract_grads_ = extract_gradients(grads_, ['bias', 'kernel'], False)
-    print("grads_: ", extract_grads_)
-    print("grads: ", extract_grads)
     return compute_alignment(flatten_arrays(extract_grads_),
                               flatten_arrays(extract_grads))
+
+@jax.jit
+def compute_weight_alignment_layerwise(state):
+    kernels, bs = extract_kernel_and_B_arrays(state.params, False)
+    return compute_layerwise_alignments(flatten_arrays_layerwise(kernels), flatten_arrays_layerwise(bs))
             
 
 def entrywise_average(array_of_arrays):
@@ -155,11 +172,6 @@ def train_step(state, inputs, labels, loss_function):
     state = state.apply_gradients(grads=grads)
     return state, loss, grads
 
-@jax.jit
-def compute_weight_alignment(state):
-    kernels, bs = extract_kernel_and_B_arrays(state.params, False)
-    return compute_alignment(flatten_arrays(kernels), flatten_arrays(bs))
-
 def extract_arrays(d, key, collected_arrays):
     if isinstance(d, dict):
         for k, v in d.items():
@@ -177,10 +189,10 @@ def extract_gradients(param_dict, keys, merge):
 def extract_kernel_and_B_arrays(param_dict, merge):
     kernels = extract_arrays(param_dict, ['kernel'], [])
     Bs = extract_arrays(param_dict, ['B'], [])
-    if kernels:
-        kernels = kernels[1:]
-    if Bs:
-        Bs = Bs[1:]
+    #if kernels:
+    #    kernels = kernels[1:]
+    #if Bs:
+    #    Bs = Bs[1:]
     kernels = merge_consecutive_pairs(kernels) if merge else kernels
     Bs = merge_consecutive_pairs(Bs) if merge else Bs
     return kernels, Bs

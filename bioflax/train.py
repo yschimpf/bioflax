@@ -8,8 +8,7 @@ from .train_helpers import (
     create_train_state,
     train_epoch,
     validate,
-    plot_sample,
-    compute_weight_alignment
+    plot_sample
 )
 from .dataloading import (
     create_dataset
@@ -55,10 +54,10 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 2 #args.epochs
+    epochs = 10 #args.epochs
     mode = "fa" #args.mode
-    activations = ["sigmoid", "sigmoid"] #args.activations
-    hidden_layers = [5, 4] #args.hidden_layers
+    activations = ["sigmoid"] #args.activations
+    hidden_layers = [1000] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
     dataset="mnist" #args.dataset
     task = "classification" #args.task
@@ -73,7 +72,7 @@ def train(): #(args):
     compute_grad_alignments = True #args.compute_grad_alignments
     project = "test_project" #args.wandb_project
     use_wandb = True #args.use_wandb
-    n = 1; #args.n (number of batches to average alignment over)
+    n = 3; #args.n (number of batches to average alignment over)
 
 
     if use_wandb: #args.use_wandb:
@@ -184,7 +183,7 @@ def train(): #(args):
                 f"-- Test Loss: {test_loss:.5f}\n"
                 f"\tVal Accuracy: {val_acc:.4f} "
                 f"-- Test Accuracy: {test_acc:.4f} "
-                f"-- Alignment: {alignment}"
+                #f"-- Alignment: {alignment}"
             )
 
         else:
@@ -235,6 +234,8 @@ def train(): #(args):
             metrics[f"Alignment bias gradient layer {i}"] = al
         for i, al in enumerate(wandb_grad_al_per_layer):
             metrics[f"Alignment gradient layer {i}"] = al
+        for i, al in enumerate(alignment):
+            metrics[f"Alignment layer {i}"] = al
         
         wandb.log(metrics)
 

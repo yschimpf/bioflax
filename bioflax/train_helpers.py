@@ -84,7 +84,7 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
             wandb_grad_al_total = compute_wandb_al_total(grads_, grads)
             wandb_grad_als_total.append(wandb_grad_al_total)
 
-            weight_al_per_layer = compute_grad_al_layerwise(grads_, grads)
+            weight_al_per_layer = compute_weight_alignment(state.params)
             weight_als_per_layer.append(weight_al_per_layer)
 
             rel_norm_grads = compute_rel_norm(grads_, grads)

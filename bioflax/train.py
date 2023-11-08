@@ -54,9 +54,9 @@ def train(): #(args):
     batch_size = 32 #args.batch_size
     loss_fn = "CE" #args.loss_fun
     val_split = 0.1 #args.val_split
-    epochs = 10 #args.epochs
+    epochs = 1 #args.epochs
     mode = "fa" #args.mode
-    activations = ["sigmoid"] #args.activations
+    activations = ["relu"] #args.activations
     hidden_layers = [1000] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
     dataset="mnist" #args.dataset
@@ -72,7 +72,7 @@ def train(): #(args):
     compute_grad_alignments = True #args.compute_grad_alignments
     project = "test_project" #args.wandb_project
     use_wandb = True #args.use_wandb
-    n = 3; #args.n (number of batches to average alignment over)
+    n = 1; #args.n (number of batches to average alignment over)
 
 
     if use_wandb: #args.use_wandb:

@@ -6,6 +6,7 @@ import torch
 import numpy as np
 import flax.linen as nn
 import flax
+import jax.tree_util as jax_tree
 from typing import Any
 from jax.nn import one_hot
 from tqdm import tqdm
@@ -71,27 +72,78 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
                 loss = get_loss(loss_function, logits, labels)
                 return loss
             loss_, grads_ = jax.value_and_grad(loss_comp)(reorganize_dict({'params': state.params})["params"])
+            print("HERE 3")
+            bias_alignment_ = compute_bias_grad_al_layerwise(grads_, grads)
+            print("HERE 4")
             bias_alignment = compute_bias_grad_layerwise(grads_, grads)
-            bias_alignemnts.append(bias_alignment)
+            
+            print("bias_alignment: ", bias_alignment)
+            
+            print("bias_alignment_: ", bias_alignment_)
+            #bias_alignemnts.append(bias_alignment)
 
-            wandb_alignment_per_layer = compute_grad_al_layerwise(grads_, grads)
-            wandb_grad_al_per_layer.append(wandb_alignment_per_layer)
+            #wandb_alignment_per_layer = compute_grad_al_layerwise(grads_, grads)
+            #wandb_grad_al_per_layer.append(wandb_alignment_per_layer)
 
-            wandb_alignment = compute_wandb_alignment(grads_, grads)
-            wandb_grad_total.append(wandb_alignment)
+            #wandb_alignment = compute_wandb_alignment(grads_, grads)
+            #wandb_grad_total.append(wandb_alignment)
 
 
     #problem zum merken, wenn man hier true macht, dann hat die matrix in dem true case iwie andere dimensionen, sodass die xtract funktion dann failt.
-    alignment = compute_weight_alignment_layerwise(state)
-    print(alignment)
+    print("HERE 1")
+    alignmentb = compute_weight_alignment(state.params)
+    print("HERE 2")
+    alignmenta = compute_weight_alignment_layerwise(state)
+    print(alignmenta)
+    print(alignmentb)
     
     #print("bias_alignemnts: ", bias_alignemnts)
-    bias_alignemnts = entrywise_average(bias_alignemnts)
-    wandb_grad_al_per_layer = entrywise_average(wandb_grad_al_per_layer)
-    print("wandb_grad_total: ", wandb_grad_total)
+    #bias_alignemnts = entrywise_average(bias_alignemnts)
+    #wandb_grad_al_per_layer = entrywise_average(wandb_grad_al_per_layer)
+    #print("wandb_grad_total: ", wandb_grad_total)
     #print("bias_alignemnts: ", bias_alignemnts)
     # Return average loss over batches
-    return state, jnp.mean(jnp.array(batch_losses)), alignment, bias_alignemnts, wandb_grad_al_per_layer, jnp.mean(jnp.array(wandb_grad_total))
+    return state, jnp.mean(jnp.array(batch_losses)), alignmentb, bias_alignemnts, wandb_grad_al_per_layer, jnp.mean(jnp.array(wandb_grad_total))
+
+#new stuff
+def remove_keys(pytree, key_list):
+    """Removes leaves from the pytree whose path contains any key from key_list."""
+    
+    def filter_fn(path, value):
+        if not any(p.key in key_list for p in path):
+            return value
+    filtered_pytree = jax_tree.tree_map_with_path(filter_fn, pytree)
+    return filtered_pytree
+
+def flatten_array(arr):
+    # Use the reshape method to flatten the array
+    flattened = arr.reshape(-1)
+    return flattened
+
+def flatten_matrices_in_tree(pytree):
+    return jax_tree.tree_map(flatten_array, pytree)
+
+@jax.jit
+def compute_weight_alignment(paramsFA):
+    kernels, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(paramsFA, ['bias', 'B'])))
+    Bs, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(paramsFA, ['bias', 'kernel'])))
+    dot_prods = jax_tree.tree_map(jnp.dot, kernels, Bs)
+    norm_kern = jax_tree.tree_map(jnp.linalg.norm, kernels)
+    norm_B = jax_tree.tree_map(jnp.linalg.norm, Bs)
+    layerwise_alignments = jax.tree_map((lambda x, y, z: x/(y*z)), dot_prods, norm_kern, norm_B)
+    return layerwise_alignments
+
+@jax.jit
+def compute_bias_grad_al_layerwise(grads_, grads):
+    bias_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['kernel', 'B'])))
+    bias, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['kernel', 'B'])))
+    dot_prods = jax_tree.tree_map(jnp.dot, bias_, bias)
+    norm_grad_ = jax_tree.tree_map(jnp.linalg.norm, bias_)
+    norm_grad = jax_tree.tree_map(jnp.linalg.norm, bias)
+    layerwise_alignments = jax.tree_map((lambda x, y, z: x/(y*z)), dot_prods, norm_grad_, norm_grad)
+    return layerwise_alignments
+
+#new stuff
 
 @jax.jit
 def compute_grad_al_layerwise(grads_, grads):

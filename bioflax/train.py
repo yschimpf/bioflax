@@ -56,8 +56,8 @@ def train(): #(args):
     val_split = 0.1 #args.val_split
     epochs = 1 #args.epochs
     mode = "fa" #args.mode
-    activations = ["relu"] #args.activations
-    hidden_layers = [1000] #args.hidden_layers
+    activations = ["relu", "relu"] #args.activations
+    hidden_layers = [500, 500] #args.hidden_layers
     key = random.PRNGKey(0)#args.jax_seed)
     dataset="mnist" #args.dataset
     task = "classification" #args.task
@@ -165,7 +165,7 @@ def train(): #(args):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
 
         
-        state, train_loss, alignment, bias_grad_alignments, wandb_grad_al_per_layer, wandb_grad_total = train_epoch(
+        state, train_loss, avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = train_epoch(
             state, bp_model, trainloader, seq_len, in_dim, loss_fn, n
         )
 
@@ -183,7 +183,7 @@ def train(): #(args):
                 f"-- Test Loss: {test_loss:.5f}\n"
                 f"\tVal Accuracy: {val_acc:.4f} "
                 f"-- Test Accuracy: {test_acc:.4f} "
-                #f"-- Alignment: {alignment}"
+                f"-- Relative Norm Gradients: {avg_rel_norm_grads:.4f}"
             )
 
         else:
@@ -224,17 +224,17 @@ def train(): #(args):
             "Training Loss": train_loss,
             "Val Loss": val_loss,
             "Val Accuracy": val_acc,
-            "Alignment": alignment,
-            "Gradient Alignment": wandb_grad_total,
+            "Relative Norms Gradients": avg_rel_norm_grads,
+            "Gradient Alignment": avg_wandb_grad_al_total,
         }
         if valloader is not None:
             metrics["Test Loss"] = test_loss
             metrics["Test Accuracy"] = test_acc
-        for i, al in enumerate(bias_grad_alignments):
+        for i, al in enumerate(avg_bias_al_per_layer):
             metrics[f"Alignment bias gradient layer {i}"] = al
-        for i, al in enumerate(wandb_grad_al_per_layer):
+        for i, al in enumerate(avg_wandb_grad_al_per_layer):
             metrics[f"Alignment gradient layer {i}"] = al
-        for i, al in enumerate(alignment):
+        for i, al in enumerate(avg_weight_al_per_layer):
             metrics[f"Alignment layer {i}"] = al
         
         wandb.log(metrics)

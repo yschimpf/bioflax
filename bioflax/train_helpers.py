@@ -58,9 +58,11 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
         identifier to select loss function
     """
     batch_losses = []
-    bias_alignemnts = []
-    wandb_grad_al_per_layer = []
-    wandb_grad_total = []
+    bias_als_per_layer = []
+    wandb_grad_als_per_layer = []
+    wandb_grad_als_total = []
+    rel_norms_grads = []
+    weight_als_per_layer = []
 
     for i, batch in enumerate(tqdm(trainloader)):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
@@ -72,38 +74,28 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
                 loss = get_loss(loss_function, logits, labels)
                 return loss
             loss_, grads_ = jax.value_and_grad(loss_comp)(reorganize_dict({'params': state.params})["params"])
-            print("HERE 3")
-            bias_alignment_ = compute_bias_grad_al_layerwise(grads_, grads)
-            print("HERE 4")
-            bias_alignment = compute_bias_grad_layerwise(grads_, grads)
             
-            print("bias_alignment: ", bias_alignment)
-            
-            print("bias_alignment_: ", bias_alignment_)
-            #bias_alignemnts.append(bias_alignment)
+            bias_al_per_layer = compute_bias_grad_al_layerwise(grads_, grads)
+            bias_als_per_layer.append(bias_al_per_layer)
 
-            #wandb_alignment_per_layer = compute_grad_al_layerwise(grads_, grads)
-            #wandb_grad_al_per_layer.append(wandb_alignment_per_layer)
+            wandb_grad_al_per_layer = compute_wandb_grad_al_layerwise(grads_, grads)
+            wandb_grad_als_per_layer.append(wandb_grad_al_per_layer)
 
-            #wandb_alignment = compute_wandb_alignment(grads_, grads)
-            #wandb_grad_total.append(wandb_alignment)
+            wandb_grad_al_total = compute_wandb_al_total(grads_, grads)
+            wandb_grad_als_total.append(wandb_grad_al_total)
 
+            weight_al_per_layer = compute_grad_al_layerwise(grads_, grads)
+            weight_als_per_layer.append(weight_al_per_layer)
 
-    #problem zum merken, wenn man hier true macht, dann hat die matrix in dem true case iwie andere dimensionen, sodass die xtract funktion dann failt.
-    print("HERE 1")
-    alignmentb = compute_weight_alignment(state.params)
-    print("HERE 2")
-    alignmenta = compute_weight_alignment_layerwise(state)
-    print(alignmenta)
-    print(alignmentb)
+            rel_norm_grads = compute_rel_norm(grads_, grads)
+            rel_norms_grads.append(rel_norm_grads)
     
-    #print("bias_alignemnts: ", bias_alignemnts)
-    #bias_alignemnts = entrywise_average(bias_alignemnts)
-    #wandb_grad_al_per_layer = entrywise_average(wandb_grad_al_per_layer)
-    #print("wandb_grad_total: ", wandb_grad_total)
-    #print("bias_alignemnts: ", bias_alignemnts)
-    # Return average loss over batches
-    return state, jnp.mean(jnp.array(batch_losses)), alignmentb, bias_alignemnts, wandb_grad_al_per_layer, jnp.mean(jnp.array(wandb_grad_total))
+    avg_bias_al_per_layer = entrywise_average(bias_als_per_layer)
+    avg_wandb_grad_al_per_layer = entrywise_average(wandb_grad_als_per_layer)
+    avg_wandb_grad_al_total = jnp.mean(jnp.array(wandb_grad_als_total))
+    avg_weight_al_per_layer = entrywise_average(weight_als_per_layer)
+    avg_rel_norm_grads = jnp.mean(jnp.array(rel_norms_grads))
+    return state, jnp.mean(jnp.array(batch_losses)), avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads
 
 #new stuff
 def remove_keys(pytree, key_list):
@@ -142,6 +134,38 @@ def compute_bias_grad_al_layerwise(grads_, grads):
     norm_grad = jax_tree.tree_map(jnp.linalg.norm, bias)
     layerwise_alignments = jax.tree_map((lambda x, y, z: x/(y*z)), dot_prods, norm_grad_, norm_grad)
     return layerwise_alignments
+
+@jax.jit
+def compute_wandb_grad_al_layerwise(grads_, grads):
+    bias_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['kernel', 'B'])))
+    bias, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['kernel', 'B'])))
+    kernel_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['bias', 'B'])))
+    kernel, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['bias', 'B'])))
+    layerwise_alignments = jax.tree_map((lambda a, b, c, d : (jnp.dot(a, b) + jnp.dot(c, d))/
+                                         (jnp.sqrt(jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(c, c)))
+                                          * jnp.sqrt(jnp.sum(jnp.multiply(b, b)) + jnp.sum(jnp.multiply(d, d)))) ), bias_, bias, kernel_, kernel)
+    return layerwise_alignments
+
+@jax.jit
+def compute_wandb_al_total(grads_, grads):
+    bias_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['kernel', 'B'])))
+    bias, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['kernel', 'B'])))
+    kernel_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['bias', 'B'])))
+    kernel, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['bias', 'B'])))
+    layerwise_alignments = jax.tree_map((lambda a, b, c, d : (jnp.dot(a, b) + jnp.dot(c, d))), bias_, bias, kernel_, kernel)
+    squared_norms_ = jax.tree_map((lambda a,b : jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(b, b))), bias_, kernel_)
+    squared_norms = jax.tree_map((lambda a,b : jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(b, b))), bias, kernel)
+    return jnp.sum(jnp.array(layerwise_alignments))/(jnp.sqrt(jnp.sum(jnp.array(squared_norms_))) * jnp.sqrt(jnp.sum(jnp.array(squared_norms))))
+
+@jax.jit
+def compute_rel_norm(grads_, grads):
+    bias_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['kernel', 'B'])))
+    bias, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['kernel', 'B'])))
+    kernel_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['bias', 'B'])))
+    kernel, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['bias', 'B'])))
+    squared_norms_ = jax.tree_map((lambda a,b : jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(b, b))), bias_, kernel_)
+    squared_norms = jax.tree_map((lambda a,b : jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(b, b))), bias, kernel)
+    return jnp.sqrt(jnp.sum(jnp.array(squared_norms_)))/jnp.sqrt(jnp.sum(jnp.array(squared_norms)))
 
 #new stuff
 

@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import numpy as np
 import jax.tree_util as jax_tree
 
+
 def compute_metrics(state, grads_,  grads, mode):
     """
     Compute alignment metrics of current epoch for given state of the model and current gradients. Metrics computed are:
@@ -29,17 +30,23 @@ def compute_metrics(state, grads_,  grads, mode):
         weight_al_per_layer = compute_weight_alignment(state.params)
     else:
         weight_al_per_layer = 0
-    
-    bias_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['kernel', 'B'])))
-    bias, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['kernel', 'B'])))
-    kernel_, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads_, ['bias', 'B'])))
-    kernel, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(grads, ['bias', 'B'])))
+
+    bias_, _ = jax_tree.tree_flatten(
+        flatten_matrices_in_tree(remove_keys(grads_, ['kernel', 'B'])))
+    bias, _ = jax_tree.tree_flatten(
+        flatten_matrices_in_tree(remove_keys(grads, ['kernel', 'B'])))
+    kernel_, _ = jax_tree.tree_flatten(
+        flatten_matrices_in_tree(remove_keys(grads_, ['bias', 'B'])))
+    kernel, _ = jax_tree.tree_flatten(
+        flatten_matrices_in_tree(remove_keys(grads, ['bias', 'B'])))
 
     bias_al_per_layer = compute_bias_grad_al_layerwise(bias_, bias)
-    wandb_grad_al_per_layer = compute_wandb_grad_al_layerwise(bias_, bias, kernel_, kernel)
+    wandb_grad_al_per_layer = compute_wandb_grad_al_layerwise(
+        bias_, bias, kernel_, kernel)
     wandb_grad_al_total = compute_wandb_al_total(bias_, bias, kernel_, kernel)
     rel_norm_grads = compute_rel_norm(bias_, bias, kernel_, kernel)
     return bias_al_per_layer, wandb_grad_al_per_layer, wandb_grad_al_total, weight_al_per_layer, rel_norm_grads
+
 
 def summarize_metrics_epoch(bias_als_per_layer, wandb_grad_als_per_layer, wandb_grad_als_total, weight_als_per_layer, rel_norms_grads, mode):
     """
@@ -71,6 +78,7 @@ def summarize_metrics_epoch(bias_als_per_layer, wandb_grad_als_per_layer, wandb_
     avg_rel_norm_grads = jnp.mean(jnp.array(rel_norms_grads))
     return avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads
 
+
 @jax.jit
 def compute_weight_alignment(params):
     """
@@ -81,13 +89,17 @@ def compute_weight_alignment(params):
     params : dict
         dictionary of model parameters
     """
-    kernels, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(params, ['bias', 'B'])))
-    Bs, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(remove_keys(params, ['bias', 'kernel'])))
+    kernels, _ = jax_tree.tree_flatten(
+        flatten_matrices_in_tree(remove_keys(params, ['bias', 'B'])))
+    Bs, _ = jax_tree.tree_flatten(flatten_matrices_in_tree(
+        remove_keys(params, ['bias', 'kernel'])))
     dot_prods = jax_tree.tree_map(jnp.dot, kernels, Bs)
     norm_kern = jax_tree.tree_map(jnp.linalg.norm, kernels)
     norm_B = jax_tree.tree_map(jnp.linalg.norm, Bs)
-    layerwise_alignments = jax.tree_map((lambda x, y, z: x/(y*z)), dot_prods, norm_kern, norm_B)
+    layerwise_alignments = jax.tree_map(
+        (lambda x, y, z: x/(y*z)), dot_prods, norm_kern, norm_B)
     return layerwise_alignments
+
 
 @jax.jit
 def compute_bias_grad_al_layerwise(bias_, bias):
@@ -101,8 +113,10 @@ def compute_bias_grad_al_layerwise(bias_, bias):
     bias : dict
         list of bias gradients of current model
     """
-    layerwise_alignments = jax.tree_map((lambda a, b: jnp.dot(a,b)/(jnp.linalg.norm(a)*jnp.linalg.norm(b))), bias_, bias)
+    layerwise_alignments = jax.tree_map((lambda a, b: jnp.dot(
+        a, b)/(jnp.linalg.norm(a)*jnp.linalg.norm(b))), bias_, bias)
     return layerwise_alignments
+
 
 @jax.jit
 def compute_wandb_grad_al_layerwise(bias_, bias, kernel_, kernel):
@@ -122,10 +136,11 @@ def compute_wandb_grad_al_layerwise(bias_, bias, kernel_, kernel):
     kernel : list
         list of weight gradients of current model
     """
-    layerwise_alignments = jax.tree_map((lambda a, b, c, d : (jnp.dot(a, b) + jnp.dot(c, d))/
+    layerwise_alignments = jax.tree_map((lambda a, b, c, d: (jnp.dot(a, b) + jnp.dot(c, d)) /
                                          (jnp.sqrt(jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(c, c)))
-                                          * jnp.sqrt(jnp.sum(jnp.multiply(b, b)) + jnp.sum(jnp.multiply(d, d)))) ), bias_, bias, kernel_, kernel)
+                                          * jnp.sqrt(jnp.sum(jnp.multiply(b, b)) + jnp.sum(jnp.multiply(d, d))))), bias_, bias, kernel_, kernel)
     return layerwise_alignments
+
 
 @jax.jit
 def compute_wandb_al_total(bias_, bias, kernel_, kernel):
@@ -145,10 +160,12 @@ def compute_wandb_al_total(bias_, bias, kernel_, kernel):
     kernel : list
         list of weight gradients of current model
     """
-    layerwise_alignments = jax.tree_map((lambda a, b, c, d : (jnp.dot(a, b) + jnp.dot(c, d))), bias_, bias, kernel_, kernel)
+    layerwise_alignments = jax.tree_map((lambda a, b, c, d: (
+        jnp.dot(a, b) + jnp.dot(c, d))), bias_, bias, kernel_, kernel)
     squared_norms_ = squared_norm(bias_, kernel_)
     squared_norms = squared_norm(bias, kernel)
     return jnp.sum(jnp.array(layerwise_alignments))/(jnp.sqrt(jnp.sum(jnp.array(squared_norms_))) * jnp.sqrt(jnp.sum(jnp.array(squared_norms))))
+
 
 @jax.jit
 def compute_rel_norm(bias_, bias, kernel_, kernel):
@@ -161,7 +178,8 @@ def compute_rel_norm(bias_, bias, kernel_, kernel):
     squared_norms = squared_norm(bias, kernel)
     return jnp.sqrt(jnp.sum(jnp.array(squared_norms_)))/jnp.sqrt(jnp.sum(jnp.array(squared_norms)))
 
-def squared_norm(a,b):
+
+def squared_norm(a, b):
     """
     Computes squared norm of concatenated a and b.
     ...
@@ -170,7 +188,7 @@ def squared_norm(a,b):
     a : list
     b : list
     """
-    return jax.tree_map((lambda a,b : jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(b, b))), a, b)
+    return jax.tree_map((lambda a, b: jnp.sum(jnp.multiply(a, a)) + jnp.sum(jnp.multiply(b, b))), a, b)
 
 
 def entrywise_average(array_of_arrays):
@@ -184,10 +202,11 @@ def entrywise_average(array_of_arrays):
     average_array = np.zeros_like(array_of_arrays[0])
     for arr in array_of_arrays:
         average_array += arr
-    
+
     average_array = average_array/len(array_of_arrays)
-    
+
     return average_array
+
 
 def reorganize_dict(input_dict):
     """
@@ -213,6 +232,7 @@ def reorganize_dict(input_dict):
 
     return new_dict
 
+
 def remove_keys(pytree, key_list):
     """
     Removes leaves from the pytree whose path contains any key from key_list.
@@ -224,12 +244,13 @@ def remove_keys(pytree, key_list):
     key_list : list
         list of keys to remove from pytree
     """
-    
+
     def filter_fn(path, value):
         if not any(p.key in key_list for p in path):
             return value
     filtered_pytree = jax_tree.tree_map_with_path(filter_fn, pytree)
     return filtered_pytree
+
 
 def flatten_array(arr):
     """
@@ -242,6 +263,7 @@ def flatten_array(arr):
     """
     flattened = arr.reshape(-1)
     return flattened
+
 
 def flatten_matrices_in_tree(pytree):
     """

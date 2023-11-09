@@ -4,6 +4,7 @@ from flax import linen as nn
 from flax.core.frozen_dict import freeze, unfreeze
 from typing import Any
 
+
 class RandomDenseLinearFA(nn.Module):
     """
     Creates a linear layer which uses feedback alignment for the backward pass.
@@ -14,11 +15,12 @@ class RandomDenseLinearFA(nn.Module):
         number of output features
     """
 
-    features : int
+    features: int
 
     @nn.compact
     def __call__(self, x):
-        B = self.param("B", nn.initializers.lecun_normal(), (jnp.shape(x)[-1], self.features))
+        B = self.param("B", nn.initializers.lecun_normal(),
+                       (jnp.shape(x)[-1], self.features))
 
         def f(module, x, B):
             return module(x)
@@ -38,7 +40,6 @@ class RandomDenseLinearFA(nn.Module):
         return custom_f(forward_module, x, B)
 
 
-
 class RandomDenseLinearKP(nn.Module):
     """
     Creates a linear layer which uses feedback alignment for the backward pass and uses Kollen-Pollack 
@@ -50,11 +51,12 @@ class RandomDenseLinearKP(nn.Module):
         number of output features
     """
 
-    features : int
+    features: int
 
     @nn.compact
     def __call__(self, x):
-        B = self.param("B", nn.initializers.lecun_normal(), (jnp.shape(x)[-1], self.features))
+        B = self.param("B", nn.initializers.lecun_normal(),
+                       (jnp.shape(x)[-1], self.features))
 
         def f(module, x, B):
             return module(x)
@@ -72,12 +74,11 @@ class RandomDenseLinearKP(nn.Module):
         forward_module = nn.Dense(self.features)
         custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x, B)
-    
 
 
 class RandomDenseLinearDFAOutput(nn.Module):
     """
-    Creates an output linear layer which uses direct feedback alignment for the backward pass.
+    Creates an output linear layer which uses direct feedback alignment for the backward pass computations.
     ...
     Attributes
     __________
@@ -85,23 +86,23 @@ class RandomDenseLinearDFAOutput(nn.Module):
         number of output features
     """
 
-    features : int
+    features: int
 
     @nn.compact
     def __call__(self, x):
 
         def f(module, x):
             return module(x)
-        
+
         def fwd(module, x):
             return nn.vjp(f, module, x)
 
         def bwd(vjp_fn, delta):
             delta_params, _ = vjp_fn(delta)
             return (delta_params, delta)
-        
+
         forward_module = nn.Dense(self.features)
-        custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+        custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x)
 
 
@@ -118,17 +119,18 @@ class RandomDenseLinearDFAHidden(nn.Module):
     activation : Any = nn.relu
         activation function applied to the weighted inputs of the layer
     """
-    features : int
-    final_output_dim : int
-    activation : Any = nn.relu
+    features: int
+    final_output_dim: int
+    activation: Any = nn.relu
 
     @nn.compact
     def __call__(self, x):
-        B = self.param("B", nn.initializers.lecun_normal(), (self.features,self.final_output_dim))
+        B = self.param("B", nn.initializers.lecun_normal(),
+                       (self.features, self.final_output_dim))
 
         def f(module, x, B):
             return self.activation(module(x))
-        
+
         def fwd(module, x, B):
             primals_out, vjp_fun = nn.vjp(f, module, x, B)
             return primals_out, (vjp_fun, B)
@@ -137,11 +139,10 @@ class RandomDenseLinearDFAHidden(nn.Module):
             vjp_fn, B = vjp_fn_B
             delta_params, _, _ = vjp_fn((B @ delta.transpose()).transpose())
             return (delta_params, delta, jnp.zeros_like(B))
-        
+
         forward_module = nn.Dense(self.features)
-        custom_f = nn.custom_vjp(fn = f, forward_fn = fwd, backward_fn = bwd)
+        custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x, B)
-    
 
 
 class BioNeuralNetwork(nn.Module):
@@ -161,15 +162,15 @@ class BioNeuralNetwork(nn.Module):
         "dfa" for direct feedback alignment, or "kp" for kollen-pollack
     """
 
-    hidden_layers : [int]
-    activations : [str]
-    features : int = 4
-    mode : str = "bp"
+    hidden_layers: [int]
+    activations: [str]
+    features: int = 4
+    mode: str = "bp"
 
     @nn.jit
     @nn.compact
     def __call__(self, x):
-        for features,activation in zip(self.hidden_layers,self.activations):
+        for features, activation in zip(self.hidden_layers, self.activations):
             if self.mode == "bp":
                 x = nn.Dense(features)(x)
                 x = getattr(nn, activation)(x)
@@ -177,7 +178,8 @@ class BioNeuralNetwork(nn.Module):
                 x = RandomDenseLinearFA(features)(x)
                 x = getattr(nn, activation)(x)
             elif self.mode == "dfa":
-                x = RandomDenseLinearDFAHidden(features, self.features, getattr(nn, activation))(x)
+                x = RandomDenseLinearDFAHidden(
+                    features, self.features, getattr(nn, activation))(x)
             elif self.mode == "kp":
                 x = RandomDenseLinearKP(features)(x)
                 x = getattr(nn, activation)(x)
@@ -190,7 +192,8 @@ class BioNeuralNetwork(nn.Module):
         elif self.mode == "kp":
             x = RandomDenseLinearKP(self.features)(x)
         return x
-    
+
+
 class TeacherNetwork(nn.Module):
     """
     Creates a simple Teacher Network to train a student network.
@@ -204,15 +207,16 @@ class TeacherNetwork(nn.Module):
         x = nn.sigmoid(x)
         x = nn.Dense(1)(x)
         return x
-    
-BatchTeacher= nn.vmap(
+
+
+BatchTeacher = nn.vmap(
     TeacherNetwork,
     in_axes=0,
     out_axes=0,
     variable_axes={'params': None},
     split_rngs={'params': False},
     axis_name='batch',
-    )
+)
 
 BatchBioNeuralNetwork = nn.vmap(
     BioNeuralNetwork,
@@ -221,4 +225,4 @@ BatchBioNeuralNetwork = nn.vmap(
     variable_axes={'params': None},
     split_rngs={'params': False},
     axis_name='batch',
-    )
+)

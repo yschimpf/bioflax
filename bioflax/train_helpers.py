@@ -14,9 +14,10 @@ from flax.training import train_state
 from functools import partial
 from .metric_computation import (
     compute_metrics,
-    summarize_metrics_epoch, 
+    summarize_metrics_epoch,
     reorganize_dict
 )
+
 
 def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     """
@@ -72,32 +73,34 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
     for i, batch in enumerate(tqdm(trainloader)):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
 
-        if i < n: 
+        if i < n:
             def loss_comp(params):
                 logits = model.apply({'params': params}, inputs)
                 loss = get_loss(loss_function, logits, labels)
                 return loss
-            loss_, grads_ = jax.value_and_grad(loss_comp)(reorganize_dict({'params': state.params})["params"])
+            loss_, grads_ = jax.value_and_grad(loss_comp)(
+                reorganize_dict({'params': state.params})["params"])
 
         state, loss, grads = train_step(state, inputs, labels, loss_function)
         batch_losses.append(loss)
-        
+
         if i < n:
             assert jnp.allclose(loss, loss_)
-            
+
             bias_al_per_layer, wandb_grad_al_per_layer, wandb_grad_al_total, weight_al_per_layer, rel_norm_grads = compute_metrics(
                 state, grads_,  grads, mode)
-            
+
             bias_als_per_layer.append(bias_al_per_layer)
             wandb_grad_als_per_layer.append(wandb_grad_al_per_layer)
             wandb_grad_als_total.append(wandb_grad_al_total)
             weight_als_per_layer.append(weight_al_per_layer)
             rel_norms_grads.append(rel_norm_grads)
-    
+
     avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = summarize_metrics_epoch(
         bias_als_per_layer, wandb_grad_als_per_layer, wandb_grad_als_total, weight_als_per_layer, rel_norms_grads, mode)
-    
+
     return state, jnp.mean(jnp.array(batch_losses)), avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads
+
 
 @partial(jax.jit, static_argnums=(3))
 def train_step(state, inputs, labels, loss_function):
@@ -123,6 +126,7 @@ def train_step(state, inputs, labels, loss_function):
     state = state.apply_gradients(grads=grads)
     return state, loss, grads
 
+
 def get_loss(loss_function, logits, labels):
     """
     Returns the loss for network outputs and labels
@@ -136,10 +140,11 @@ def get_loss(loss_function, logits, labels):
     labels : int32
         labels for the batch
     """
-    if(loss_function == "CE"):
+    if (loss_function == "CE"):
         return optax.softmax_cross_entropy_with_integer_labels(logits=jnp.squeeze(logits), labels=labels).mean()
-    elif(loss_function == "MSE"):
+    elif (loss_function == "MSE"):
         return optax.l2_loss(jnp.squeeze(logits), jnp.squeeze(labels)).mean()
+
 
 def prep_batch(batch, seq_len, in_dim):
     """
@@ -156,8 +161,9 @@ def prep_batch(batch, seq_len, in_dim):
     """
     inputs, labels = batch
     inputs = jnp.array(inputs.numpy()).astype(float)
-    labels = jnp.array(labels.numpy()) 
+    labels = jnp.array(labels.numpy())
     return inputs, labels
+
 
 @partial(jnp.vectorize, signature="(c),()->()")
 def compute_accuracy(logits, label):
@@ -224,12 +230,11 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
         if loss_function == "CE":
             accuracies = jnp.append(accuracies, acc)
         loss_mean = jnp.mean(losses)
-    
+
     acc_mean = 10000000.
     if loss_function == "CE":
         acc_mean = jnp.mean(accuracies)
     return loss_mean, acc_mean
-
 
 
 def pred_step(state, batch, seq_len, in_dim, task):
@@ -251,14 +256,14 @@ def pred_step(state, batch, seq_len, in_dim, task):
     """
     inputs, labels = prep_batch(batch, seq_len, in_dim)
     logits = state.apply_fn({'params': state.params}, inputs)
-    if(task == "classification"):
+    if (task == "classification"):
         return jnp.squeeze(logits).argmax(axis=1)
-    elif(task == "regression"):
+    elif (task == "regression"):
         return logits
-    else :
+    else:
         print("Task not supported")
         return None
-    
+
 
 def plot_sample(testloader, state, seq_len, in_dim, task):
     """
@@ -277,7 +282,7 @@ def plot_sample(testloader, state, seq_len, in_dim, task):
     task : str
         identifier for task
     """
-    if(task == "classification"):
+    if (task == "classification"):
         return plot_mnist_sample(testloader, state, seq_len, in_dim, task)
     elif (task == "regression"):
         return plot_regression_sample(testloader, state, seq_len, in_dim, task)
@@ -338,8 +343,8 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task):
     labels_array = np.array([])
     pred_array = np.array([])
     if in_dim != 1 | seq_len != 1:
-            print("Plotting only possible for 1D inputs")
-            return
+        print("Plotting only possible for 1D inputs")
+        return
     for i in range(5):
         test_batch = next(iter(testloader))
         pred = pred_step(state, test_batch, seq_len, in_dim, task)
@@ -351,5 +356,3 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task):
     plt.scatter(inputs_array.flatten(), labels_array.flatten(), label="True")
     plt.scatter(inputs_array.flatten(), pred_array.flatten(), label="Pred")
     plt.show()
-
-

@@ -46,7 +46,7 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 
-def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mode, compute_alignments):
+def train_epoch(state, model, trainloader, loss_function, n, mode, compute_alignments):
     """
     Training function for an epoch that loops over batches.
     ...
@@ -62,6 +62,13 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
         dimensionality of a single input
     loss_function: str
         identifier to select loss function
+    n : int
+        number of batches over which to compute alignments
+    mode : str
+        identifier for training mode
+    compute_alignments : bool
+        flag to compute alignments
+
     """
     batch_losses = []
     bias_als_per_layer = []
@@ -71,7 +78,7 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
     weight_als_per_layer = []
 
     for i, batch in enumerate(tqdm(trainloader)):
-        inputs, labels = prep_batch(batch, seq_len, in_dim)
+        inputs, labels = prep_batch(batch)
 
         if i < n and compute_alignments:
             def loss_comp(params):
@@ -79,10 +86,10 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
                 loss = get_loss(loss_function, logits, labels)
                 return loss
             if (mode != 'bp'):
-                loss_, grads_ = jax.value_and_grad(loss_comp)(
+                _, grads_ = jax.value_and_grad(loss_comp)(
                     reorganize_dict({'params': state.params})["params"])
             else:
-                loss_, grads_ = jax.value_and_grad(loss_comp)(state.params)
+                _, grads_ = jax.value_and_grad(loss_comp)(state.params)
 
         state, loss, grads = train_step(state, inputs, labels, loss_function)
         batch_losses.append(loss)
@@ -149,7 +156,7 @@ def get_loss(loss_function, logits, labels):
         return optax.l2_loss(jnp.squeeze(logits), jnp.squeeze(labels)).mean()
 
 
-def prep_batch(batch, seq_len, in_dim):
+def prep_batch(batch):
     """
     Prepares a batch of data for training.
     ...
@@ -227,8 +234,8 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
     losses, accuracies = jnp.array([]), jnp.array([])
 
     for batch in tqdm(testloader):
-        inputs, labels = prep_batch(batch, seq_len, in_dim)
-        loss, acc, logits = eval_step(inputs, labels, state, loss_function)
+        inputs, labels = prep_batch(batch)
+        loss, acc, _ = eval_step(inputs, labels, state, loss_function)
         losses = jnp.append(losses, loss)
         if loss_function == "CE":
             accuracies = jnp.append(accuracies, acc)
@@ -240,7 +247,7 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
     return loss_mean, acc_mean
 
 
-def pred_step(state, batch, seq_len, in_dim, task):
+def pred_step(state, batch, task):
     """
     Prediction function to obtain outputs for a batch of data
     ...
@@ -250,14 +257,10 @@ def pred_step(state, batch, seq_len, in_dim, task):
         current train state of the model
     batch : tuple
         batch of data
-    seq_len : int
-        sequence length used when running model
-    in_dim : int
-        input dimension of model
     task : str 
         identifier for task
     """
-    inputs, labels = prep_batch(batch, seq_len, in_dim)
+    inputs, _ = prep_batch(batch)
     logits = state.apply_fn({'params': state.params}, inputs)
     if (task == "classification"):
         return jnp.squeeze(logits).argmax(axis=1)
@@ -286,7 +289,7 @@ def plot_sample(testloader, state, seq_len, in_dim, task, output_features):
         identifier for task
     """
     if (task == "classification"):
-        return plot_mnist_sample(testloader, state, seq_len, in_dim, task)
+        return plot_mnist_sample(testloader, state, task)
     elif (task == "regression"):
         return plot_regression_sample(testloader, state, seq_len, in_dim, task, output_features)
     else:
@@ -294,7 +297,7 @@ def plot_sample(testloader, state, seq_len, in_dim, task, output_features):
         return None
 
 
-def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
+def plot_mnist_sample(testloader, state, task):
     """
     Plots a sample of the test set for the MNIST dataset
     ...
@@ -304,18 +307,14 @@ def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
         pytorch dataloader for the test set
     state : TrainState
         current train state of the model
-    seq_len : int
-        sequence length used when running model
-    in_dim : int
-        input dimension of model
     task : str
         identifier for task
     """
     test_batch = next(iter(testloader))
-    pred = pred_step(state, test_batch, seq_len, in_dim, task)
+    pred = pred_step(state, test_batch, task)
 
-    fig, axs = plt.subplots(5, 5, figsize=(12, 12))
-    inputs, labels = test_batch
+    _, axs = plt.subplots(5, 5, figsize=(12, 12))
+    inputs, _ = test_batch
     inputs = torch.reshape(inputs, (inputs.shape[0], 28, 28, 1))
     print(inputs.shape)
     for i, ax in enumerate(axs.flatten()):
@@ -350,7 +349,7 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task, output_feat
         return
     for i in range(5):
         test_batch = next(iter(testloader))
-        pred = pred_step(state, test_batch, seq_len, in_dim, task)
+        pred = pred_step(state, test_batch, task)
         inputs, labels = test_batch
         labels = labels
         inputs_array = np.append(inputs_array, inputs)

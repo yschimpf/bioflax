@@ -173,6 +173,18 @@ def compute_rel_norm(bias_, bias, kernel_, kernel):
     Computes the relative norm of gradient of current model compared to gradient of comparison model:
     ||(bias_, kernel_)||/||(bias, kernel)||
     - where the biases and weights are concatenated across layers
+    ...
+    Parameters
+    ----------
+    bias_ : list
+        list of bias gradients of comparison model
+    bias : list
+        list of bias gradients of current model
+    kernel_ : list
+        list of weight gradients of comparison model
+    kernel : list
+        list of weight gradients of current model
+    """
     """
     squared_norms_ = squared_norm(bias_, kernel_)
     squared_norms = squared_norm(bias, kernel)

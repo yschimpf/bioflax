@@ -100,6 +100,7 @@ def train(args):
 
     init_rng_bp, key = random.split(key, num=2)
 
+    # bp model to compute alignments
     bp_model = BatchBioNeuralNetwork(
         hidden_layers=hidden_layers,
         activations=activations,
@@ -124,7 +125,7 @@ def train(args):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
 
         state, train_loss, avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = train_epoch(
-            state, bp_model, trainloader, seq_len, in_dim, loss_fn, n, mode, compute_alignments
+            state, bp_model, trainloader, loss_fn, n, mode, compute_alignments
         )
 
         if valloader is not None:

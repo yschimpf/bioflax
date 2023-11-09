@@ -166,7 +166,7 @@ def train(): #(args):
 
         
         state, train_loss, avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = train_epoch(
-            state, bp_model, trainloader, seq_len, in_dim, loss_fn, n
+            state, bp_model, trainloader, seq_len, in_dim, loss_fn, n, mode
         )
 
         if valloader is not None:

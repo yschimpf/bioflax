@@ -13,12 +13,8 @@ from tqdm import tqdm
 from flax.training import train_state
 from functools import partial
 from .metric_computation import (
-    compute_wandb_grad_al_layerwise,
-    compute_wandb_al_total,
-    compute_bias_grad_al_layerwise,
-    compute_rel_norm,
-    compute_weight_alignment,
-    entrywise_average,
+    compute_metrics,
+    summarize_metrics_epoch, 
     reorganize_dict
 )
 
@@ -49,7 +45,7 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 
-def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
+def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mode):
     """
     Training function for an epoch that loops over batches.
     ...
@@ -75,36 +71,32 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n):
 
     for i, batch in enumerate(tqdm(trainloader)):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
-        state, loss, grads = train_step(state, inputs, labels, loss_function)
-        batch_losses.append(loss)
+
         if i < n: 
             def loss_comp(params):
                 logits = model.apply({'params': params}, inputs)
                 loss = get_loss(loss_function, logits, labels)
                 return loss
             loss_, grads_ = jax.value_and_grad(loss_comp)(reorganize_dict({'params': state.params})["params"])
-            assert jnp.allclose(loss, loss_) #will fail. continue here tomorrow. Move the computation before the state update to have equality
+
+        state, loss, grads = train_step(state, inputs, labels, loss_function)
+        batch_losses.append(loss)
+        
+        if i < n:
+            assert jnp.allclose(loss, loss_)
             
-            bias_al_per_layer = compute_bias_grad_al_layerwise(grads_, grads)
+            bias_al_per_layer, wandb_grad_al_per_layer, wandb_grad_al_total, weight_al_per_layer, rel_norm_grads = compute_metrics(
+                state, grads_,  grads, mode)
+            
             bias_als_per_layer.append(bias_al_per_layer)
-
-            wandb_grad_al_per_layer = compute_wandb_grad_al_layerwise(grads_, grads)
             wandb_grad_als_per_layer.append(wandb_grad_al_per_layer)
-
-            wandb_grad_al_total = compute_wandb_al_total(grads_, grads)
             wandb_grad_als_total.append(wandb_grad_al_total)
-
-            weight_al_per_layer = compute_weight_alignment(state.params)
             weight_als_per_layer.append(weight_al_per_layer)
-
-            rel_norm_grads = compute_rel_norm(grads_, grads)
             rel_norms_grads.append(rel_norm_grads)
     
-    avg_bias_al_per_layer = entrywise_average(bias_als_per_layer)
-    avg_wandb_grad_al_per_layer = entrywise_average(wandb_grad_als_per_layer)
-    avg_wandb_grad_al_total = jnp.mean(jnp.array(wandb_grad_als_total))
-    avg_weight_al_per_layer = entrywise_average(weight_als_per_layer)
-    avg_rel_norm_grads = jnp.mean(jnp.array(rel_norms_grads))
+    avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = summarize_metrics_epoch(
+        bias_als_per_layer, wandb_grad_als_per_layer, wandb_grad_als_total, weight_als_per_layer, rel_norms_grads, mode)
+    
     return state, jnp.mean(jnp.array(batch_losses)), avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads
 
 @partial(jax.jit, static_argnums=(3))
@@ -149,7 +141,6 @@ def get_loss(loss_function, logits, labels):
     elif(loss_function == "MSE"):
         return optax.l2_loss(jnp.squeeze(logits), jnp.squeeze(labels)).mean()
 
-
 def prep_batch(batch, seq_len, in_dim):
     """
     Prepares a batch of data for training.
@@ -167,10 +158,6 @@ def prep_batch(batch, seq_len, in_dim):
     inputs = jnp.array(inputs.numpy()).astype(float)
     labels = jnp.array(labels.numpy()) 
     return inputs, labels
-
-
-
-
 
 @partial(jnp.vectorize, signature="(c),()->()")
 def compute_accuracy(logits, label):
@@ -203,7 +190,6 @@ def eval_step(inputs, labels, state, loss_function):
     loss_function: str
         identifier to select loss function
     """
-
     logits = state.apply_fn({"params": state.params}, inputs)
     losses = get_loss(loss_function, logits, labels)
     accs = None
@@ -229,7 +215,6 @@ def validate(state, testloader, seq_len, in_dim, loss_function):
     loss_function: str
         identifier to select loss function
     """
-
     losses, accuracies = jnp.array([]), jnp.array([])
 
     for batch in tqdm(testloader):
@@ -264,7 +249,6 @@ def pred_step(state, batch, seq_len, in_dim, task):
     task : str 
         identifier for task
     """
-
     inputs, labels = prep_batch(batch, seq_len, in_dim)
     logits = state.apply_fn({'params': state.params}, inputs)
     if(task == "classification"):
@@ -293,7 +277,6 @@ def plot_sample(testloader, state, seq_len, in_dim, task):
     task : str
         identifier for task
     """
-
     if(task == "classification"):
         return plot_mnist_sample(testloader, state, seq_len, in_dim, task)
     elif (task == "regression"):
@@ -320,7 +303,6 @@ def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
     task : str
         identifier for task
     """
-
     test_batch = next(iter(testloader))
     pred = pred_step(state, test_batch, seq_len, in_dim, task)
 
@@ -352,7 +334,6 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task):
     task : str
         identifier for task
     """
-    
     inputs_array = np.array([])
     labels_array = np.array([])
     pred_array = np.array([])

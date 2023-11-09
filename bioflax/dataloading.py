@@ -113,7 +113,7 @@ def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L,
     test_rng, train_rng = jax.random.split(key)
 
     if (dataset == "teacher"):
-        model = BatchTeacher()
+        model = BatchTeacher(features=d_output)
         params = model.init(model_rng, jnp.ones(
             (batch_size, d_input, L)))['params']
     elif (dataset == "sinprop"):

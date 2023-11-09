@@ -1,0 +1,1 @@
+{"Training Loss": 0.003322301432490349, "Val Loss": 0.0027460281271487474, "Test Loss": 0.002767950063571334, "_timestamp": 1699539742.625251, "_runtime": 12.741074085235596, "_step": 9, "Best Val Loss": 0.033483412116765976, "Best Epoch": 0, "Best Test Loss": 0.033109962940216064, "_wandb": {"runtime": 11}}

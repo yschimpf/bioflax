@@ -46,7 +46,7 @@ def create_train_state(model, rng, lr, momentum, in_dim, batch_size, seq_len):
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 
-def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mode):
+def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mode, compute_alignments):
     """
     Training function for an epoch that loops over batches.
     ...
@@ -73,22 +73,21 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
     for i, batch in enumerate(tqdm(trainloader)):
         inputs, labels = prep_batch(batch, seq_len, in_dim)
 
-        if i < n:
+        if i < n and compute_alignments:
             def loss_comp(params):
                 logits = model.apply({'params': params}, inputs)
                 loss = get_loss(loss_function, logits, labels)
                 return loss
             if (mode != 'bp'):
-                _, grads_ = jax.value_and_grad(loss_comp)(
+                loss_, grads_ = jax.value_and_grad(loss_comp)(
                     reorganize_dict({'params': state.params})["params"])
             else:
-                _, grads_ = jax.value_and_grad(loss_comp)(state.params)
+                loss_, grads_ = jax.value_and_grad(loss_comp)(state.params)
 
         state, loss, grads = train_step(state, inputs, labels, loss_function)
         batch_losses.append(loss)
 
-        if i < n:
-
+        if i < n and compute_alignments:
             bias_al_per_layer, wandb_grad_al_per_layer, wandb_grad_al_total, weight_al_per_layer, rel_norm_grads = compute_metrics(
                 state, grads_,  grads, mode)
 
@@ -98,10 +97,12 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
             weight_als_per_layer.append(weight_al_per_layer)
             rel_norms_grads.append(rel_norm_grads)
 
-    avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = summarize_metrics_epoch(
-        bias_als_per_layer, wandb_grad_als_per_layer, wandb_grad_als_total, weight_als_per_layer, rel_norms_grads, mode)
-
-    return state, jnp.mean(jnp.array(batch_losses)), avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads
+    if compute_alignments:
+        avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = summarize_metrics_epoch(
+            bias_als_per_layer, wandb_grad_als_per_layer, wandb_grad_als_total, weight_als_per_layer, rel_norms_grads, mode)
+        return state, jnp.mean(jnp.array(batch_losses)), avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads
+    else:
+        return state, jnp.mean(jnp.array(batch_losses)), 0, 0, 0, 0, 0
 
 
 @partial(jax.jit, static_argnums=(3))
@@ -267,7 +268,7 @@ def pred_step(state, batch, seq_len, in_dim, task):
         return None
 
 
-def plot_sample(testloader, state, seq_len, in_dim, task):
+def plot_sample(testloader, state, seq_len, in_dim, task, output_features):
     """
     Plots a sample of the test set
     ...
@@ -287,7 +288,7 @@ def plot_sample(testloader, state, seq_len, in_dim, task):
     if (task == "classification"):
         return plot_mnist_sample(testloader, state, seq_len, in_dim, task)
     elif (task == "regression"):
-        return plot_regression_sample(testloader, state, seq_len, in_dim, task)
+        return plot_regression_sample(testloader, state, seq_len, in_dim, task, output_features)
     else:
         print("Task not supported")
         return None
@@ -324,7 +325,7 @@ def plot_mnist_sample(testloader, state, seq_len, in_dim, task):
     plt.show()
 
 
-def plot_regression_sample(testloader, state, seq_len, in_dim, task):
+def plot_regression_sample(testloader, state, seq_len, in_dim, task, output_features):
     """
     Plots a sample of the test set for the regression task
     ...
@@ -344,8 +345,8 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task):
     inputs_array = np.array([])
     labels_array = np.array([])
     pred_array = np.array([])
-    if in_dim != 1 | seq_len != 1:
-        print("Plotting only possible for 1D inputs")
+    if in_dim != 1 or seq_len != 1 or output_features != 1:
+        print("Regression sample plotting only possible for 1D inputs")
         return
     for i in range(5):
         test_batch = next(iter(testloader))

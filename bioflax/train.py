@@ -53,27 +53,29 @@ def train():  # (args):
 
     # parameter initialization
     batch_size = 64  # args.batch_size
-    loss_fn = "CE"  # args.loss_fun
     val_split = 0.1  # args.val_split
-    epochs = 10  # args.epochs
-    mode = "bp"  # args.mode
+    epochs = 5  # args.epochs
+    mode = "fa"  # args.mode
     activations = ["relu", "relu"]  # args.activations
     hidden_layers = [500, 500]  # args.hidden_layers
-    key = random.PRNGKey(0)  # args.jax_seed)
+    seed = 0  # args.jax_seed)
     dataset = "mnist"  # args.dataset
-    task = "classification"  # args.task
     in_dim = 1  # args.in_dim (dim des vectors)
     seq_len = 1  # args.seq_len (länge des vectors)
-    output_features = 1  # args.output_features
+    output_features = 10  # args.output_features
     train_set_size = 50  # args.input_size => size of the teacher/sin train set to generate
     test_set_size = 10  # args.input_size => size of the teacher/sin test set to generate
-    plot = True  # args.plot
     lr = 0.1  # args.lr # learning rate
     momentum = 0  # args.momentum # momentum
-    compute_grad_alignments = True  # args.compute_grad_alignments
+    plot = True  # args.plot
+    compute_alignments = False  # args.compute_grad_alignments
     project = "test_project"  # args.wandb_project
     use_wandb = True  # args.use_wandb
     n = 1  # args.n (number of batches to average alignment over)
+
+    key = random.PRNGKey(seed)
+    task = "classification"  # args.task => as of now depends on dataset
+    loss_fn = "CE"  # args.loss_fun => as of now depends on dataset
 
     if use_wandb:  # args.use_wandb:
         # Make wandb config dictionary
@@ -99,7 +101,7 @@ def train():  # (args):
         output_features,
         seq_len,
         in_dim,
-    ) = create_dataset(seed=42, batch_size=32, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size)  # (seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
+    ) = create_dataset(seed=42, batch_size=batch_size, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size)  # (seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
     print(f"[*] Starting training on mnist =>> '{dataset}' Initializing...")
 
     # model to run experiments with
@@ -146,7 +148,7 @@ def train():  # (args):
         print(f"[*] Starting Training Epoch {epoch + 1}...")
 
         state, train_loss, avg_bias_al_per_layer, avg_wandb_grad_al_per_layer, avg_wandb_grad_al_total, avg_weight_al_per_layer, avg_rel_norm_grads = train_epoch(
-            state, bp_model, trainloader, seq_len, in_dim, loss_fn, n, mode
+            state, bp_model, trainloader, seq_len, in_dim, loss_fn, n, mode, compute_alignments
         )
 
         if valloader is not None:
@@ -162,12 +164,17 @@ def train():  # (args):
             print(
                 f"\tTrain Loss: {train_loss:.5f} "
                 f"-- Val Loss: {val_loss:.5f} "
-                f"-- Test Loss: {test_loss:.5f}\n"
-                f"\tVal Accuracy: {val_acc:.4f} "
-                f"-- Test Accuracy: {test_acc:.4f}\n "
-                f"\t Relative Norm Gradients: {avg_rel_norm_grads:.4f} "
-                f"-- Gradient Alignment: {avg_wandb_grad_al_total:.4f}"
-            )
+                f"-- Test Loss: {test_loss:.5f}")
+            if task == 'classification':
+                print(
+                    f"\tVal Accuracy: {val_acc:.4f} "
+                    f"-- Test Accuracy: {test_acc:.4f} "
+                )
+            if compute_alignments:
+                print(
+                    f"\tRelative Norm Gradients: {avg_rel_norm_grads:.4f} "
+                    f"-- Gradient Alignment: {avg_wandb_grad_al_total:.4f}"
+                )
 
         else:
             # else use test set as validation set
@@ -178,11 +185,15 @@ def train():  # (args):
             print(f"\n=>> Epoch {epoch + 1} Metrics ===")
             print(
                 f"\tTrain Loss: {train_loss:.5f}"
-                f"-- Test Loss: {val_loss:.5f}\n"
-                f"--Test Accuracy: {val_acc:.4f}"
-                f"\tRelative Norm Gradients: {avg_rel_norm_grads:.4f}"
-                f"-- Gradient Alignment: {avg_wandb_grad_al_total:.4f}"
+                f"-- Test Loss: {val_loss:.5f}"
             )
+            if task == 'classification':
+                print(f"-- Test Accuracy: {val_acc:.4f}\n")
+            if compute_alignments:
+                print(
+                    f"\tRelative Norm Gradients: {avg_rel_norm_grads:.4f}"
+                    f"-- Gradient Alignment: {avg_wandb_grad_al_total:.4f}"
+                )
 
         if val_acc > best_acc:
             # Increment counters etc.
@@ -192,39 +203,50 @@ def train():  # (args):
             else:
                 best_test_loss, best_test_acc = best_loss, best_acc
         # Print best accuracy & loss so far...
-        print(
-            f"\tBest Val Loss: {best_loss:.5f} -- Best Val Accuracy:"
-            f" {best_acc:.4f} at Epoch {best_epoch + 1}\n"
-            f"\tBest Test Loss: {best_test_loss:.5f} -- Best Test Accuracy:"
-            f" {best_test_acc:.4f} at Epoch {best_epoch + 1}\n"
-        )
+        if task == 'regression':
+            print(
+                f"\tBest Val Loss: {best_loss:.5f} at Epoch {best_epoch + 1}\n"
+                f"\tBest Test Loss: {best_test_loss:.5f} at Epoch {best_epoch + 1}\n"
+            )
+        elif task == 'classification':
+            print(
+                f"\tBest Val Loss: {best_loss:.5f} -- Best Val Accuracy:"
+                f" {best_acc:.4f} at Epoch {best_epoch + 1}\n"
+                f"\tBest Test Loss: {best_test_loss:.5f} -- Best Test Accuracy:"
+                f" {best_test_acc:.4f} at Epoch {best_epoch + 1}\n"
+            )
 
         metrics = {
             "Training Loss": train_loss,
             "Val Loss": val_loss,
-            "Val Accuracy": val_acc,
-            "Relative Norms Gradients": avg_rel_norm_grads,
-            "Gradient Alignment": avg_wandb_grad_al_total,
         }
+
+        if task == 'classification':
+            metrics["Val Accuracy"]: val_acc
         if valloader is not None:
             metrics["Test Loss"] = test_loss
             if task == 'classification':
                 metrics["Test Accuracy"] = test_acc
-        for i, al in enumerate(avg_bias_al_per_layer):
-            metrics[f"Alignment bias gradient layer {i}"] = al
-        for i, al in enumerate(avg_wandb_grad_al_per_layer):
-            metrics[f"Alignment gradient layer {i}"] = al
-        if mode == "fa" or mode == "kp":
-            for i, al in enumerate(avg_weight_al_per_layer):
-                metrics[f"Alignment layer {i}"] = al
+
+        if compute_alignments:
+            metrics["Relative Norms Gradients"] = avg_rel_norm_grads
+            metrics["Gradient Alignment"] = avg_wandb_grad_al_total
+            for i, al in enumerate(avg_bias_al_per_layer):
+                metrics[f"Alignment bias gradient layer {i}"] = al
+            for i, al in enumerate(avg_wandb_grad_al_per_layer):
+                metrics[f"Alignment gradient layer {i}"] = al
+            if mode == "fa" or mode == "kp":
+                for i, al in enumerate(avg_weight_al_per_layer):
+                    metrics[f"Alignment layer {i}"] = al
 
         wandb.log(metrics)
 
         wandb.run.summary["Best Val Loss"] = best_loss
-        wandb.run.summary["Best Val Accuracy"] = best_acc
         wandb.run.summary["Best Epoch"] = best_epoch
         wandb.run.summary["Best Test Loss"] = best_test_loss
-        wandb.run.summary["Best Test Accuracy"] = best_test_acc
+        if task == 'classification':
+            wandb.run.summary["Best Test Accuracy"] = best_test_acc
+            wandb.run.summary["Best Val Accuracy"] = best_acc
 
     if (plot):
-        plot_sample(testloader, state, seq_len, in_dim, task)
+        plot_sample(testloader, state, seq_len, in_dim, task, output_features)

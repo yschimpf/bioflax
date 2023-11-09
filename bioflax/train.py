@@ -74,8 +74,12 @@ def train(args):  # (args):
     entity = args.wandb_entity
 
     key = random.PRNGKey(seed)
-    task = "classification"  # args.task => as of now depends on dataset
-    loss_fn = "CE"  # args.loss_fun => as of now depends on dataset
+    if (dataset == "mnist"):
+        task = "classification"
+        loss_fn = "CE"
+    else:
+        task = "regression"
+        loss_fn = "MSE"
 
     if use_wandb:  # args.use_wandb:
         # Make wandb config dictionary

@@ -43,7 +43,7 @@ args needs:
 """
 
 
-def train():  # (args):
+def train(args):  # (args):
     """
     Main function to train over a certain amount of epochs for model and data given by args
     """
@@ -51,27 +51,27 @@ def train():  # (args):
     best_test_loss = 100000000
     best_test_acc = -10000.0
 
-    # parameter initialization
-    batch_size = 64  # args.batch_size
-    val_split = 0.1  # args.val_split
-    epochs = 5  # args.epochs
-    mode = "fa"  # args.mode
-    activations = ["relu", "relu"]  # args.activations
-    hidden_layers = [500, 500]  # args.hidden_layers
-    seed = 0  # args.jax_seed)
-    dataset = "mnist"  # args.dataset
-    in_dim = 1  # args.in_dim (dim des vectors)
-    seq_len = 1  # args.seq_len (länge des vectors)
-    output_features = 10  # args.output_features
-    train_set_size = 50  # args.input_size => size of the teacher/sin train set to generate
-    test_set_size = 10  # args.input_size => size of the teacher/sin test set to generate
-    lr = 0.1  # args.lr # learning rate
-    momentum = 0  # args.momentum # momentum
-    plot = True  # args.plot
-    compute_alignments = False  # args.compute_grad_alignments
-    project = "test_project"  # args.wandb_project
-    use_wandb = True  # args.use_wandb
-    n = 1  # args.n (number of batches to average alignment over)
+    batch_size = args.batch_size
+    val_split = args.val_split
+    epochs = args.epochs
+    mode = args.mode
+    activations = args.activations
+    hidden_layers = args.hidden_layers
+    seed = args.jax_seed
+    dataset = args.dataset
+    in_dim = args.in_dim
+    seq_len = args.seq_len
+    output_features = args.output_features
+    train_set_size = args.train_set_size
+    test_set_size = args.test_set_size
+    lr = args.lr
+    momentum = args.momentum
+    plot = args.plot
+    compute_alignments = args.compute_grad_alignments
+    project = args.wandb_project
+    use_wandb = args.use_wandb
+    n = args.n
+    entity = args.wandb_entity
 
     key = random.PRNGKey(seed)
     task = "classification"  # args.task => as of now depends on dataset
@@ -82,8 +82,8 @@ def train():  # (args):
         wandb.init(
             project=project,
             job_type="model_training",
-            config={},  # vars(args),
-            # entity=args.wandb_entity,
+            config=vars(args),
+            entity=entity,
         )
     else:
         wandb.init(mode="offline")
@@ -180,7 +180,8 @@ def train():  # (args):
             # else use test set as validation set
             print(f"[*] Running Epoch {epoch + 1} Test...")
             val_loss, val_acc = validate(
-                state, testloader, seq_len, in_dim, loss_fn)
+                state, testloader, seq_len, in_dim, loss_fn
+            )
 
             print(f"\n=>> Epoch {epoch + 1} Metrics ===")
             print(

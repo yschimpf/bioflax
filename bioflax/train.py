@@ -52,11 +52,11 @@ def train():  # (args):
     best_test_acc = -10000.0
 
     # parameter initialization
-    batch_size = 32  # args.batch_size
+    batch_size = 64  # args.batch_size
     loss_fn = "CE"  # args.loss_fun
     val_split = 0.1  # args.val_split
-    epochs = 1  # args.epochs
-    mode = "dfa"  # args.mode
+    epochs = 10  # args.epochs
+    mode = "bp"  # args.mode
     activations = ["relu", "relu"]  # args.activations
     hidden_layers = [500, 500]  # args.hidden_layers
     key = random.PRNGKey(0)  # args.jax_seed)
@@ -120,25 +120,24 @@ def train():  # (args):
         seq_len=seq_len,
     )
 
-    if mode != "bp":
-        init_rng_bp, key = random.split(key, num=2)
+    init_rng_bp, key = random.split(key, num=2)
 
-        bp_model = BatchBioNeuralNetwork(
-            hidden_layers=hidden_layers,
-            activations=activations,
-            features=output_features,
-            mode="bp",
-        )
+    bp_model = BatchBioNeuralNetwork(
+        hidden_layers=hidden_layers,
+        activations=activations,
+        features=output_features,
+        mode="bp",
+    )
 
-        bp_state = create_train_state(
-            model=bp_model,
-            rng=init_rng_bp,
-            lr=lr,
-            momentum=momentum,
-            in_dim=in_dim,
-            batch_size=batch_size,
-            seq_len=seq_len,
-        )
+    bp_state = create_train_state(
+        model=bp_model,
+        rng=init_rng_bp,
+        lr=lr,
+        momentum=momentum,
+        in_dim=in_dim,
+        batch_size=batch_size,
+        seq_len=seq_len,
+    )
 
     # Training Loop over epochs
     best_loss, best_acc, best_epoch = 100000000, - \
@@ -164,8 +163,8 @@ def train():  # (args):
                 f"\tTrain Loss: {train_loss:.5f} "
                 f"-- Val Loss: {val_loss:.5f} "
                 f"-- Test Loss: {test_loss:.5f}\n"
-                f"-- Val Accuracy: {val_acc:.4f} "
-                f"-- Test Accuracy: {test_acc:.4f} "
+                f"\tVal Accuracy: {val_acc:.4f} "
+                f"-- Test Accuracy: {test_acc:.4f}\n "
                 f"\t Relative Norm Gradients: {avg_rel_norm_grads:.4f} "
                 f"-- Gradient Alignment: {avg_wandb_grad_al_total:.4f}"
             )
@@ -209,7 +208,8 @@ def train():  # (args):
         }
         if valloader is not None:
             metrics["Test Loss"] = test_loss
-            metrics["Test Accuracy"] = test_acc
+            if task == 'classification':
+                metrics["Test Accuracy"] = test_acc
         for i, al in enumerate(avg_bias_al_per_layer):
             metrics[f"Alignment bias gradient layer {i}"] = al
         for i, al in enumerate(avg_wandb_grad_al_per_layer):

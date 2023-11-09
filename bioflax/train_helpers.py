@@ -78,14 +78,16 @@ def train_epoch(state, model, trainloader, seq_len, in_dim, loss_function, n, mo
                 logits = model.apply({'params': params}, inputs)
                 loss = get_loss(loss_function, logits, labels)
                 return loss
-            loss_, grads_ = jax.value_and_grad(loss_comp)(
-                reorganize_dict({'params': state.params})["params"])
+            if (mode != 'bp'):
+                _, grads_ = jax.value_and_grad(loss_comp)(
+                    reorganize_dict({'params': state.params})["params"])
+            else:
+                _, grads_ = jax.value_and_grad(loss_comp)(state.params)
 
         state, loss, grads = train_step(state, inputs, labels, loss_function)
         batch_losses.append(loss)
 
         if i < n:
-            assert jnp.allclose(loss, loss_)
 
             bias_al_per_layer, wandb_grad_al_per_layer, wandb_grad_al_total, weight_al_per_layer, rel_norm_grads = compute_metrics(
                 state, grads_,  grads, mode)

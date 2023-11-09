@@ -219,17 +219,13 @@ def reorganize_dict(input_dict):
         dictionary describing parameters for one of the biologically plausible models
     """
     new_dict = {'params': {}}
-
-    for layer_key, layer_val in input_dict['params'].items():
-        layer_num = layer_key.split('_')[-1]
-        for param_key, param_val in layer_val.items():
-            if param_key == 'B':
-                continue
-            new_key = param_key.split('_')[0] + '_' + layer_num
-            if new_key not in new_dict['params']:
-                new_dict['params'][new_key] = {}
-            new_dict['params'][new_key] = param_val
-
+    dense_counter = 0
+    for _, layer_group_val in input_dict['params'].items():
+        for layer_key, layer_val in layer_group_val.items():
+            if layer_key.startswith('Dense'):
+                new_key = f'Dense_{dense_counter}'
+                dense_counter += 1
+                new_dict['params'][new_key] = layer_val
     return new_dict
 
 

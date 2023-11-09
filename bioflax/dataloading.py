@@ -125,10 +125,10 @@ def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L,
     test_dataset = generate_sample_set(
         model, params, test_rng, batch_size, d_input, L, test_set_size)
 
-    train_loader, val_loader, test_loader, train_size = create_loaders(
+    train_loader, val_loader, test_loader = create_loaders(
         train_dataset, test_dataset, seed, val_split, batch_size)
 
-    return train_loader, val_loader, test_loader, train_size, d_output, L, d_input,
+    return train_loader, val_loader, test_loader, d_output, L, d_input,
 
 
 def create_loaders(train_dataset, test_dataset, seed, val_split, batch_size):

@@ -15,37 +15,9 @@ from .dataloading import (
 )
 
 
-"""
-desired logging: log loss (accuracy classification), gradient alignment ⇒ 
-full one and per layer (requires side modem with backprop), the relative 
-norm of the gradients, alignment of matrices ⇒ do so in the training file 
-(!not per layer) → if it takes to much place in a separate logging.py
-
-
-args needs: 
-    - args.lr (learning rate)
-    - args.use_wandb (boolean)
-    - args.wandb_project (stirng of project name)
-    - args.wandb_entity (string of entity name)
-    - args.jax_seed (int)
-    - args.dir_name (string of directory name)
-    - args.batch_size (int)
-    - args.dataset (string of dataset name)
-    - args.hidden_layers (list of ints)
-    - args.activations (list of strings)
-    - args.mode (string of mode name)
-    - args.momentum (float)
-    - args.epochs (int)
-    - args.loss_fun (string of loss function name)
-    - args.val_split (float) (0. corresponds to val_set = None)
-    - compute weight alignment
-
-"""
-
-
-def train(args):  # (args):
+def train(args):
     """
-    Main function to train over a certain amount of epochs for model and data given by args
+    Main function for training and eveluating a biomodel. Training and evaluation set up by arguments passed in args.
     """
 
     best_test_loss = 100000000

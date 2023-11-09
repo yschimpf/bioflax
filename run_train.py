@@ -28,7 +28,7 @@ if __name__ == "__main__":
                         help="Number of epochs for training.")
     parser.add_argument("--mode", type=str, default="fa",
                         choices=['bp', 'fa', 'kp', 'dfa'], help="Mode for training. Choices: ['bp', 'fa', 'kp', 'dfa'].")
-    parser.add_argument("--activations", nargs='+', default=[
+    parser.add_argument("--activations", nargs='+', type=str, default=[
                         "relu", "relu"], help="List of activation functions for each hidden layer.")
     parser.add_argument("--hidden_layers", nargs='+', type=int, default=[
                         500, 500], help="List of the number of neurons for each hidden layer.")
@@ -64,6 +64,7 @@ if __name__ == "__main__":
                         help="Weights & Biases entity name.")
 
     args = parser.parse_args()
+
     print("Start")
     train(args)
     print("End")

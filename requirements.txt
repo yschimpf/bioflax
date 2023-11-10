@@ -3,8 +3,8 @@ jax==0.4.20
 matplotlib==3.8.1
 numpy==1.26.1
 optax==0.1.7
-torch==2.1.0+cpu
-torchaudio==2.1.0+cpu
-torchvision==0.16.0+cpu
+torch==2.1.0
+torchaudio==2.1.0
+torchvision==0.16.0
 tqdm==4.66.1
 wandb==0.15.12

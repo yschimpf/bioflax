@@ -9,16 +9,34 @@ $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
 The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation:
 $$\delta_l = \phi'(y_l)W_{l+1}^T\delta_{l+1}$$
 
+<div align="center">
+  <img src="/docs/figures/BP.png" alt="BP Neural Network" width="150"/>
+  <br>
+  <em>Figure 1: Neural Network using BP. Taken from [5].</em>
+</div>
+
 The weight transport problem stems from the fact, that the matrices $W_l$ appear on both the forward and the backward pass, and the required symmetry is unlikely to exist in the brain. That's because in the brain the synapses in the forward and feedback paths are physically distinct and there is no known way in which they could coordinate themselves to reflect the symmetry.
 
-This repository provides JAX implementations of alternative algorithms which decouple forward and backward pass. The algorithms are implemented by extending Flax modules and defining a custom backward pass. By doing so they can be integrated with other Flax modules and respective functionality flawlessly.
+This repository provides JAX implementations of alternative algorithms that decouple forward and backward passes. The algorithms are implemented by extending Flax modules and defining a custom backward pass. By doing so they can be integrated with other Flax modules and respective functionality flawlessly.
 
 The implemented algorithms are
-- Feedback Alignment [4]
-- Direct Feedback Alignment [5]
-- Kollen Pollack [6]
+- Feedback Alignment (FA) [4]
+- Direct Feedback Alignment (DFA) [5]
+- Kollen Pollack (KP) [6]
 
-##
+## Feedback alignment
+The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights B on the feedback path. The staggering result is that even though the forward and feedback weights are uncorrelated (in the beginning) and hence the gradient computation is by no means exact, the network essentially learns how to learn using those weights. This happens because information about the backward weights B flows into the forward weights W via the update. Concretely, the update rules of BP are modified as follows: 
+
+The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule:
+$$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
+The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ using B instead of $W^T$
+$$\delta_l = \phi'(y_l)B_{l}\delta_{l+1}$$
+
+<div align="center">
+  <img src="/docs/figures/FA.png" alt="FA Neural Network" width="150"/>
+  <br>
+  <em>Figure 1: Neural Network using FA. Taken from [5].</em>
+</div>
 
 ## References
 

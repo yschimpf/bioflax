@@ -57,4 +57,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run unittests
         run: |
-          pytest
+           python -m unittest bioflax/test_layers.py

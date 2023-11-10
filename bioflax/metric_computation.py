@@ -185,7 +185,6 @@ def compute_rel_norm(bias_, bias, kernel_, kernel):
     kernel : list
         list of weight gradients of current model
     """
-    """
     squared_norms_ = squared_norm(bias_, kernel_)
     squared_norms = squared_norm(bias, kernel)
     return jnp.sqrt(jnp.sum(jnp.array(squared_norms_)))/jnp.sqrt(jnp.sum(jnp.array(squared_norms)))

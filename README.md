@@ -6,8 +6,8 @@ Backpropagation [1], combined with stochastic gradient, is a powerful and widely
 
 The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule:
 $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
-The backward pass feeds the error $\kronecker _{l+1}$ at layer $l+1$ back to layer $l$ to generate $\kron_l$ according to the backpropagation equation:
-$$\kron_l = \phi'(y_l)W_{l+1}^T\kronecker _{l+1}$$
+The backward pass feeds the error $\delta _{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta _l$ according to the backpropagation equation:
+$$\delta_l = \phi'(y_l)W_{l+1}^T\delta _{l+1}$$
 
 ## References
 

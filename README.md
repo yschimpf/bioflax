@@ -17,15 +17,16 @@ $$\delta_l = \phi'(y_l)W_{l+1}^T\delta_{l+1}$$
 
 The weight transport problem stems from the fact, that the matrices $W_l$ appear on both the forward and the backward pass, and the required symmetry is unlikely to exist in the brain. That's because in the brain the synapses in the forward and feedback paths are physically distinct and there is no known way in which they could coordinate themselves to reflect the symmetry.
 
-This repository provides JAX implementations of alternative algorithms that decouple forward and backward passes. The algorithms are implemented by extending Flax modules and defining a custom backward pass. By doing so they can be integrated with other Flax modules and respective functionality flawlessly.
+This repository provides JAX implementations of alternative algorithms that decouple forward and backward passes. The algorithms are implemented by extending [Flax](https://github.com/google/flax) modules and defining a custom backward pass. By doing so they can be integrated with other Flax modules and respective functionality flawlessly.
 
 The implemented algorithms are
 - Feedback Alignment (FA) [4]
+- Kolen Pollack (KP) [6]
 - Direct Feedback Alignment (DFA) [5]
-- Kollen Pollack (KP) [6]
 
-## Feedback alignment
-The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights B on the feedback path. The staggering result is that even though the forward and feedback weights are uncorrelated (in the beginning) and hence the gradient computation is by no means exact, the network essentially learns how to learn using those weights. This happens because information about the backward weights B flows into the forward weights W via the update. Concretely, the update rules of BP are modified as follows: 
+## Feedback alignment [4]
+### Theory
+The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that even though the forward and feedback weights are independent (in the beginning) and hence the gradient computation is by no means exact, the network essentially learns how to learn using the fixed random weights $B$. This happens because information about the backward weights $B$ flows into the forward weights W via the update. Concretely, the update rules of BP are modified as follows: 
 
 The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule:
 $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
@@ -37,6 +38,12 @@ $$\delta_l = \phi'(y_l)B_{l}\delta_{l+1}$$
   <br>
   <em>Figure 1: Neural Network using FA. Taken from [5].</em>
 </div>
+
+### Code
+The code is contained in the [model.py](/bioflax/model.py) file. The functionality is implemented via a custom Flax linen module RandomDenseLinearFA. More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) function is defined that uses a standard Dense layer on the forward path but passes the error through the layer by multiplying with $B$ instead of $W$ on the backward path. Note that the way Flax works the nonlinearity is independent of the layer and hence will be handled by auto differentiation when composing the entire backward path. Overall, this extension perfectly integrates into the Flax framework.
+
+## Kolen Pollack [6]
+
 
 ## References
 

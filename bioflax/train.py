@@ -39,7 +39,7 @@ def train(args):
     lr = args.lr
     momentum = args.momentum
     plot = args.plot
-    compute_alignments = args.compute_grad_alignments
+    compute_alignments = args.compute_alignments
     project = args.wandb_project
     use_wandb = args.use_wandb
     n = args.n

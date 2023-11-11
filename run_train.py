@@ -52,7 +52,7 @@ if __name__ == "__main__":
                         help="Momentum for the optimizer.")
     parser.add_argument("--plot", type=str2bool, default=True,
                         help="Flag to plot the results.")
-    parser.add_argument("--compute_grad_alignments", type=str2bool, default=True,
+    parser.add_argument("--compute_alignments", type=str2bool, default=True,
                         help="Flag to compute gradient alignments.")
     parser.add_argument("--wandb_project", type=str,
                         default="test_project", help="Weights & Biases project name.")

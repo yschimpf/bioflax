@@ -1,4 +1,4 @@
-![Test modules](https://github.com/github/docs/actions/workflows/python-package-conda.yml/badge.svg)
+![Python Unit Tests](https://github.com/yschimpf/bioflax/actions/workflows/python-package-conda.yml/badge.svg)
 # bioflax
 
 This repository provides an inofficial JAX implementation of biologically plausible deep learning algorithms Feedback Alignment, Kolen-Pollack, and Direct Feedback Alignment. 

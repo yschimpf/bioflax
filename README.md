@@ -1,5 +1,7 @@
 # bioflax
 
+This repository provides an inofficial JAX implementation of biologically plausible deep learning algorithms Feedback Alignment, Kolen-Pollack, and Direct Feedback Alignment.      
+
 ## Introduction
 
 Backpropagation [1], combined with stochastic gradient, is a powerful and widely used algorithm for learning via artificial neural networks. Yet, for several reasons, it's not plausible for this algorithm to run in the brain in a similar fashion as pointed out quickly after its introduction [2,3]. One of the most prominent issues is the so-called weight transport problem. A typical deep-learning architecture works in two phases. Firstly, in the forward pass inputs are fed forward through the layers of the network from the input to the output layer along the forward path to produce an output. This output is compared to the target and the resulting error is passed back through the network in the backward pass from the output to the input layer along the feedback path. On the fly, the backward pass generates error signals for each layer to compute the parameter gradients that constitute the updates.
@@ -28,7 +30,7 @@ The implemented algorithms are
 ### Theory
 The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that even though the forward and feedback weights are independent (in the beginning) and hence the gradient computation is by no means exact, the network essentially learns how to learn using the fixed random weights $B$. This happens because information about the backward weights $B$ flows into the forward weights W via the update. Concretely, the update rules of BP are modified as follows: 
 
-- The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he following update rule:
+- The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according the following update rule:
 $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
 - The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ using B instead of $W^T$
 $$\delta_l = \phi'(y_l)B_{l}\delta_{l+1}$$

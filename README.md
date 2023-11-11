@@ -182,6 +182,35 @@ class NetworkKP(nn.Module):
 If you need help on how to use modules for actual learning in Flax please refer to the [Flax doxumentation](https://flax.readthedocs.io/en/latest/).
 
 ## Run experiments
+To run an experiment simply execute
+```
+python run_train.py
+```
+which will result in a run with the default configuration. The settable arguments (and their respective default values) are:
+```
+--batch_size           Batch size during training. Type: int, Default: 32
+--val_split            Percentage of training samples for validation. Type: float, Default: 0.1
+--epochs               Number of training epochs. Type: int, Default: 5
+--mode                 Training mode. Choices: ['bp', 'fa', 'kp', 'dfa']. Type: str, Default: "fa"
+--activations          Activation functions for each layer. Type: str (list), Default: ["relu", "relu"]
+--hidden_layers        Neurons in each hidden layer. Type: int (list), Default: [500, 500]
+--jax_seed             Seed for JAX RNG. Type: int, Default: 0
+--dataset              Dataset for training. Choices: ['mnist', 'sinprop', 'teacher']. Type: str, Default: "mnist"
+--in_dim               Input vector dimension. Type: int, Default: 1
+--seq_len              Length of input sequence. Type: int, Default: 1
+--output_features      Number of output features. Type: int, Default: 10
+--train_set_size       Size of the training set. Type: int, Default: 50
+--test_set_size        Size of the test set. Type: int, Default: 10
+--lr                   Learning rate. Type: float, Default: 0.02
+--momentum             Momentum value. Type: float, Default: 0
+--plot                 Enable/disable plotting. Type: boolean, Default: True
+--compute_alignments   Enable/disable alignment computations. Type: boolean, Default: True
+--wandb_project        Weights & Biases project name. Type: str, Default: "test_project"
+--use_wandb            Enable/disable Weights & Biases for logging. Type: boolean, Default: True
+--n                    Batches for alignment averaging. Type: int, Default: 5
+--wandb_entity         Weights & Biases entity name. Type: str, Default: "bioflax"
+   
+```
 
 ## References
 

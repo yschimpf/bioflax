@@ -180,6 +180,9 @@ class NetworkKP(nn.Module):
 
 ```
 If you need help on how to use modules for actual learning in Flax please refer to the [Flax doxumentation](https://flax.readthedocs.io/en/latest/).
+
+## Run experiments
+
 ## References
 
 [1] David E. Rumelhart, Geoffrey E. Hinton, and Ronald J. Williams. Learning representations by back-propagating errors. Nature, 323(6088), 1986.

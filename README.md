@@ -130,10 +130,16 @@ bioflax/
     model.py                 Layer implementations for FA, KP, and DFA.
     test_layers.py           Unit tests for layer implementations.
     train.py                 Training loop code.
-    train_helpers.py         Functions for optimization, training, and evaluation steps,
-requirements.txt             Requirements for running the code
-run_train.py                 Training loop entrypoint
+    train_helpers.py         Functions for optimization, training, and evaluation steps.
+requirements.txt             Requirements for running the code.
+run_train.py                 Training loop entry point.
       
+```
+Directories that may be created on-the-fly: 
+```
+data/MNIST/raw               Raw MNIST data as downloaded.
+wandb/                       Local WandB log file
+
 ```
 
 ## References

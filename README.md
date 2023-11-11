@@ -1,4 +1,4 @@
-![Python Unit Tests](https://github.com/yschimpf/bioflax/actions/workflows/python-package-conda.yml/badge.svg)
+![Python Unit Tests](https://github.com/yschimpf/bioflax/actions/workflows/run_tests.yml/badge.svg?event=push)
 # bioflax
 
 This repository provides an inofficial JAX implementation of biologically plausible deep learning algorithms Feedback Alignment, Kolen-Pollack, and Direct Feedback Alignment. 
@@ -15,6 +15,7 @@ Content:
   - Theory
   - Code
 - Requirements & Installation
+- Repository structure
 - References
 ## Introduction
 
@@ -113,7 +114,27 @@ $$\Delta W  = - \eta_W \delta_{l+1}y_l^T - \lambda W_{l+1}$$
 The code is contained in the [model.py](/bioflax/model.py) file. The functionality is implemented via two custom Flax linen modules RandomDenseLinearDFAOutput and RandomDenseLinearDFAHidden. More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) is defined in each to compute the correct updates. The modules are less generic compared to standard Flax linen modules for the reason that to still integrate with the framework which is built for backpropagation the auto differentiation must be tricked in a more intriguing way. In its nature DFA doesn't propagate anything through layers but directly to the respective layers. In the code, this is achieved by propagating the error at the output layer directly to the next layer in the custom_vjp function. In doing so, every layer can apply its own matrix $B$ to that error. The remaining problem is that now the derivative of the activation should also no longer be applied on the path but layerwise. To circumvent this issue the activations are integrated into the layer. That way, they can be considered for the local computations but neglected for the global pass of the error. This is a little different compared to the separation of layer and activation as usual in Flax. Yet, once the layers are defined with this knowledge all other features of the framework can flawlessly be used once again. In the output layer, no matrix $B$ must be applied to the error. This is done via defining a separate module for the output layer, which also doesn't use an activation as is usual in neural networks for the output layer, but could be achieved by setting $B$ to the identity matrix of the correct dimension as well.
 
 ## Requirements & Installation
-To run the code on your own machine, run 
+To run the code on your own machine, run `pip install -r requirements.txt`. For the GPU installation of JAX, which is a little more involved please refer to the [JAX installation instructions](https://github.com/google/jax#installation). For dataloading PyTorch is needed as well. It needs to be installed separately and more importantly, the CPU version needs to be installed because of inference issues with JAX. Please refer to [PyTorch installation instructions](https://pytorch.org/get-started/locally/).
+
+### Data Download
+In this first release, the code has built-in support to run experiments on the MNIST dataset, a teacher-student dataset, and a sin-propagation dataset. None of these require explicit data download. MNIST will be downloaded automatically on execution and the teacher-student dataset as well as the sin-propagation dataset are created on the fly. 
+
+## Repository structure
+Directories and files that ship with the GitHub repo
+```
+.github/workflows/
+    run_tests.yml            Workflow to run unit tests that ensure the functionality of the layer implementations.
+bioflax/
+    dataloading.py           Dataloading functions.
+    metric_computation.py    Functions for metric computation
+    model.py                 Layer implementations for FA, KP, and DFA.
+    test_layers.py           Unit tests for layer implementations.
+    train.py                 Training loop code.
+    train_helpers.py         Functions for optimization, training, and evaluation steps,
+requirements.txt             Requirements for running the code
+run_train.py                 Training loop entrypoint
+      
+```
 
 ## References
 

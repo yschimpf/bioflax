@@ -139,9 +139,47 @@ Directories that may be created on-the-fly:
 ```
 data/MNIST/raw               Raw MNIST data as downloaded.
 wandb/                       Local WandB log file
+```
+## Use layers
+Detached from the rest of the code the Flax modules - the biological layer implementations respectively - can be used to define custom modules (Dense networks) that run with the respective deep learning algorithm. For example, a two-layer Dense network for the available algorithms that perfectly integrates with the Flax framework can be created as follows: 
+```python
+import jax
+import flax.linen as nn
+from model import (
+    RandomDenseLinearFA,
+    RandomDenseLinearKP,
+    RandomDenseLinearDFAOutput,
+    RandomDenseLinearDFAHidden
+)
+
+class NetworkFA(nn.Module):
+            @nn.compact
+            def __call__(self, x):
+                x = RandomDenseLinearFA(15)(x)
+                x = nn.sigmoid(x)
+                x = RandomDenseLinearFA(10)(x)
+                return x
+
+class NetworkKP(nn.Module):
+            @nn.compact
+            def __call__(self, x):
+                x = RandomDenseLinearKP(15)(x)
+                x = nn.sigmoid(x)
+                x = RandomDenseLinearKP(10)(x)
+                return x
+
+# Note the differences for DFA. In particular, activations must be handed to the hidden layers and mustn't be
+# on the computational path elsewhere. Secondly, the Hidden layers need the final output dimension as input
+# apart from the layers features in activation.
+ class NetworkDFA(nn.Module):
+            @nn.compact
+            def __call__(self, x):
+                x = RandomDenseLinearDFAHidden(15, 10, nn.sigmoid)(x)
+                x = RandomDenseLinearDFAOutput(10)(x)
+                return x
 
 ```
-
+If you need help on how to use modules for actual learning in Flax please refer to the [Flax doxumentation](https://flax.readthedocs.io/en/latest/).
 ## References
 
 [1] David E. Rumelhart, Geoffrey E. Hinton, and Ronald J. Williams. Learning representations by back-propagating errors. Nature, 323(6088), 1986.

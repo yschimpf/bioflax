@@ -42,8 +42,11 @@ def create_train_state(model, rng, lr, momentum, weight_decay, in_dim, batch_siz
     """
     dummy_input = jnp.ones((batch_size, in_dim, seq_len))
     params = model.init(rng, dummy_input)['params']
-    tx = optax.sgd(learning_rate=lr, momentum=momentum).add_decayed_weights(
-        weight_decay=weight_decay)
+    sgd_optimizer = optax.sgd(learning_rate=lr, momentum=momentum)
+    tx = optax.chain(
+        optax.add_decayed_weights(weight_decay),
+        sgd_optimizer
+    )
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 

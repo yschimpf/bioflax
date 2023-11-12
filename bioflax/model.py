@@ -199,13 +199,14 @@ class TeacherNetwork(nn.Module):
     Creates a simple Teacher Network to train a student network.
     """
     features: int = 1
+    activation: str = "sigmoid"
 
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(64)(x)
-        x = nn.sigmoid(x)
+        x = getattr(nn, self.activation)(x)
         x = nn.Dense(32)(x)
-        x = nn.sigmoid(x)
+        x = getattr(nn, self.activation)(x)
         x = nn.Dense(self.features)(x)
         return x
 

@@ -36,6 +36,7 @@ def train(args):
     output_features = args.output_features
     train_set_size = args.train_set_size
     test_set_size = args.test_set_size
+    teacher_act = args.teacher_act
     lr = args.lr
     momentum = args.momentum
     weight_decay = args.weight_decay
@@ -53,6 +54,9 @@ def train(args):
     else:
         task = "regression"
         loss_fn = "MSE"
+
+    if dataset == "sinreg":
+        output_features = 1
 
     if use_wandb:  # args.use_wandb:
         # Make wandb config dictionary
@@ -78,7 +82,7 @@ def train(args):
         output_features,
         seq_len,
         in_dim,
-    ) = create_dataset(seed=42, batch_size=batch_size, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size)  # (seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
+    ) = create_dataset(seed=42, batch_size=batch_size, dataset=dataset, val_split=val_split, input_dim=in_dim, output_dim=output_features, L=seq_len, train_set_size=train_set_size, test_set_size=test_set_size, teacher_act=teacher_act)  # (seed=args.jax_seed, batch_size=args.batch_size, dataset = args.dataset)
     print(f"[*] Starting training on mnist =>> '{dataset}' Initializing...")
 
     # model to run experiments with

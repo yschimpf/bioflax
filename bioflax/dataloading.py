@@ -10,7 +10,7 @@ from .model import (
 )
 
 
-def create_dataset(seed, batch_size, dataset, val_split, input_dim, output_dim, L, train_set_size, test_set_size):
+def create_dataset(seed, batch_size, dataset, val_split, input_dim, output_dim, L, train_set_size, test_set_size, teacher_act):
     """
     Function that creates asked dataset. Returns pytorch dataloaders.
     ...
@@ -34,11 +34,13 @@ def create_dataset(seed, batch_size, dataset, val_split, input_dim, output_dim, 
         size of the training set in terms of batches
     test_set_size : int
         size of the test set in terms of batches
+    teacher_act : str
+        activation function of teacher network
     """
     if (dataset == "mnist"):
         return create_mnist_dataset(seed, batch_size, val_split)
-    elif (dataset == "teacher" or dataset == "sinprop"):
-        return create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size, dataset)
+    elif (dataset == "teacher" or dataset == "sinreg"):
+        return create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size, dataset, teacher_act)
     else:
         raise ValueError("Unknown dataset")
 
@@ -78,7 +80,7 @@ def create_mnist_dataset(seed, batch_size, val_split):
     return train_loader, val_loader, test_loader, d_output, L, d_input,
 
 
-def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size, dataset):
+def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L, train_set_size, test_set_size, dataset, teacher_act):
     """
     Returns pytorch train-, test-, and validation-dataloaders for either a Teacher Network dataset or a sinus dataset.
     ...
@@ -102,6 +104,8 @@ def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L,
         size of the test set in terms of batches
     dataset : str
         identifier for dataset
+    teacher_act : str
+        activation function of teacher network
     """
 
     d_input = input_dim
@@ -113,10 +117,10 @@ def create_random_dataset(seed, batch_size, val_split, input_dim, output_dim, L,
     test_rng, train_rng = jax.random.split(key)
 
     if (dataset == "teacher"):
-        model = BatchTeacher(features=d_output)
+        model = BatchTeacher(features=d_output, activation=teacher_act)
         params = model.init(model_rng, jnp.ones(
             (batch_size, d_input, L)))['params']
-    elif (dataset == "sinprop"):
+    elif (dataset == "sinreg"):
         model = None
         params = None
 

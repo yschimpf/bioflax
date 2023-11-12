@@ -4,19 +4,21 @@
 This repository provides an inofficial JAX implementation of biologically plausible deep learning algorithms Feedback Alignment, Kolen-Pollack, and Direct Feedback Alignment. 
 
 Content:
-- Introduction
-- Feedback Alignment
-  - Theory
-  - Code
-- Kolen Pollack
-  - Theory
-  - Code
-- Direct Feedback Alignment
-  - Theory
-  - Code
-- Requirements & Installation
-- Repository structure
-- References
+1. [Introduction](#introduction)
+2. [Feedback Alignment [4]](#feedback-alignment-4)
+   - [Theory](#theory)
+   - [Code](#code)
+4. [Kolen Pollack [6]](#kolen-pollack-6)
+   - [Theory](#theory-1)
+   - [Code](#code-1)
+5. [Direct Feedback Alignment [5]](#direct-feedback-alignment-5)
+   - [Theory](#theory-2)
+   - [Code](#code-2)
+6. [Data Download](#data-download)
+7. [Repository structure](#repository-structure)
+8. [Use layers](#use-layers)
+9. [Run experiments](#run-experiments)
+10. [References](#references)
 ## Introduction
 
 Backpropagation [1], combined with stochastic gradient, is a powerful and widely used algorithm for learning via artificial neural networks. Yet, for several reasons, it's not plausible for this algorithm to run in the brain in a similar fashion as pointed out quickly after its introduction [2,3]. One of the most prominent issues is the so-called weight transport problem. A typical deep-learning architecture works in two phases. Firstly, in the forward pass inputs are fed forward through the layers of the network from the input to the output layer along the forward path to produce an output. This output is compared to the target and the resulting error is passed back through the network in the backward pass from the output to the input layer along the feedback path. On the fly, the backward pass generates error signals for each layer to compute the parameter gradients that constitute the updates.
@@ -116,7 +118,7 @@ The code is contained in the [model.py](/bioflax/model.py) file. The functionali
 ## Requirements & Installation
 To run the code on your own machine, run `pip install -r requirements.txt`. For the GPU installation of JAX, which is a little more involved please refer to the [JAX installation instructions](https://github.com/google/jax#installation). For dataloading PyTorch is needed as well. It needs to be installed separately and more importantly, the CPU version needs to be installed because of inference issues with JAX. Please refer to [PyTorch installation instructions](https://pytorch.org/get-started/locally/).
 
-### Data Download
+## Data Download
 In this first release, the code has built-in support to run experiments on the MNIST dataset, a teacher-student dataset, and a sin-propagation dataset. None of these require explicit data download. MNIST will be downloaded automatically on execution and the teacher-student dataset as well as the sin-propagation dataset are created on the fly. 
 
 ## Repository structure

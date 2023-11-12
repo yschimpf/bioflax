@@ -1,4 +1,4 @@
-![Python Unit Tests](https://github.com/yschimpf/bioflax/actions/workflows/run_tests.yml/badge.svg?event=push)
+![Layer Unit Tests](https://github.com/yschimpf/bioflax/actions/workflows/run_tests.yml/badge.svg?event=push)
 
 # bioflax
 
@@ -98,7 +98,7 @@ The computations for forward and feedback paths remain the same as for FA:
   $$\frac{\partial L}{\partial B_l} =  y_{l-1}\delta_l^T$$
 - Forward weights $W$ and now also backward weights $B$ are updated according to:
   $$W_l^{t+1}  = W_l^t - \eta_W^t\frac{\partial L}{\partial W_l^t} - \lambda W_{l}^t$$
-  $$B_l^{t+1} = - \eta_W^t \frac{\partial L}{\partial B_l^t} - \lambda B_{l}^t$$
+  $$B_l^{t+1} = B_l^t - \eta_W^t \frac{\partial L}{\partial B_l^t} - \lambda B_{l}^t$$
   Here $\eta_W$ is the learning rate and $\lambda$ the weight decay. One can easily verify that
   $$W(t) - B(t) = (1-\lambda)^t[W(0)-B(0)]$$
   where $B(t)$ and $W(t)$ refers to the respective matrix at step t. Hence, as long as $0 < \lambda < 1$ $W$ and $B$ matrices will converge, and with them the respective gradients.

@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Schimpf"
+    given-names: "Yanick"
+  - family-names: "Zucchet"
+    given-names: "Nicolas"
+title: "bioflax - JAX implementation of biologically plausible deep learning algorithms"
+version: 0.0.1
+url: "https://github.com/yschimpf/bioflax"
+date-released: /

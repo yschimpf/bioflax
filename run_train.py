@@ -50,6 +50,8 @@ if __name__ == "__main__":
                         help="Learning rate for the optimizer.")
     parser.add_argument("--momentum", type=float, default=0,
                         help="Momentum for the optimizer.")
+    parser.add_argument("--weight_decay", type=float,
+                        default=0, help="Weight decay for the optimizer.")
     parser.add_argument("--plot", type=str2bool, default=True,
                         help="Flag to plot the results.")
     parser.add_argument("--compute_alignments", type=str2bool, default=True,

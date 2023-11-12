@@ -38,6 +38,7 @@ def train(args):
     test_set_size = args.test_set_size
     lr = args.lr
     momentum = args.momentum
+    weight_decay = args.weight_decay
     plot = args.plot
     compute_alignments = args.compute_alignments
     project = args.wandb_project
@@ -93,6 +94,7 @@ def train(args):
         rng=init_rng,
         lr=lr,
         momentum=momentum,
+        weight_decay=weight_decay,
         in_dim=in_dim,
         batch_size=batch_size,
         seq_len=seq_len,
@@ -113,6 +115,7 @@ def train(args):
         rng=init_rng_bp,
         lr=lr,
         momentum=momentum,
+        weight_decay=weight_decay,
         in_dim=in_dim,
         batch_size=batch_size,
         seq_len=seq_len,

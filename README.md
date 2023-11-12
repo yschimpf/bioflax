@@ -1,7 +1,7 @@
 ![Python Unit Tests](https://github.com/yschimpf/bioflax/actions/workflows/run_tests.yml/badge.svg?event=push)
 # bioflax
 
-This repository provides an inofficial JAX implementation of biologically plausible deep learning algorithms Feedback Alignment, Kolen-Pollack, and Direct Feedback Alignment. 
+This repository provides an unofficial JAX implementation of biologically plausible deep learning algorithms. In particular, Feedback Alignment, Kolen-Pollack, and Direct Feedback Alignment are implemented and a framework for running experiments with them is given.
 
 Content:
 1. [Introduction](#introduction)
@@ -21,12 +21,17 @@ Content:
 10. [References](#references)
 ## Introduction
 
-Backpropagation [1], combined with stochastic gradient, is a powerful and widely used algorithm for learning via artificial neural networks. Yet, for several reasons, it's not plausible for this algorithm to run in the brain in a similar fashion as pointed out quickly after its introduction [2,3]. One of the most prominent issues is the so-called weight transport problem. A typical deep-learning architecture works in two phases. Firstly, in the forward pass inputs are fed forward through the layers of the network from the input to the output layer along the forward path to produce an output. This output is compared to the target and the resulting error is passed back through the network in the backward pass from the output to the input layer along the feedback path. On the fly, the backward pass generates error signals for each layer to compute the parameter gradients that constitute the updates.
+Backpropagation [1], combined with stochastic gradient, is a powerful and widely used algorithm for learning via artificial neural networks. Yet, as pointed out quickly after its introduction, for several reasons it's not plausible for this algorithm to run in the brain in a similar fashion [2,3]. One of the most prominent issues is the so-called weight transport problem. A typical deep-learning architecture works in two phases. Firstly, in the forward pass inputs are fed forward through the network from the input to the output layer along the forward path to produce an output. This output is compared to a target using a chosen loss function $L$ and the resulting error is passed back through the network in the backward pass from the output to the input layer along the feedback path. On the fly, the backward pass generates error signals for each layer to compute the parameter gradients that constitute the updates.
 
-The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule:
+The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule, where $\phi$ is a (mostly) non-linear activation function:
 $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
-The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation:
+The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation.
 $$\delta_l = \phi'(y_l)W_{l+1}^T\delta_{l+1}$$
+Using those $\delta$ updates for $W$ are computed on the fly:
+$$\frac{\partial L}{\partial W_l} = \delta_l y_{l-1}^T$$
+For some learning rate $\eta$  this finally yields:
+$$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l}$$
+A typical network chains together multiple such layers and schematically looks like this.
 
 <div align="center">
   <img src="/docs/figures/BP.png" alt="BP Neural Network" width="150"/>
@@ -45,12 +50,16 @@ The implemented algorithms are
 
 ## Feedback Alignment [4]
 ### Theory
-The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that even though the forward and feedback weights are independent (in the beginning) and hence the gradient computation is by no means exact, the network essentially learns how to learn using the fixed random weights $B$. This happens because information about the backward weights $B$ flows into the forward weights W via the update. Concretely, the update rules of BP are modified as follows: 
+1. The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that even though the forward and feedback weights are independent (in the beginning), in expectation uncorrelated (in the beginning), and hence the gradient computation is heavily biased, the network essentially learns how to learn using the fixed random weights $B$. This happens because information about the backward weights $B$ flows into the forward weights W via the update resulting in increasing alignment with the true gradients. Concretely, the $\delta$ computation of BP is modified yielding: 
 
 - The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according the following update rule:
 $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
 - The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ using B instead of $W^T$
 $$\delta_l = \phi'(y_l)B_{l}\delta_{l+1}$$
+- Using those $\delta$ updates for $W$ are computed on the fly:
+$$\frac{\partial L}{\partial W_l} = \delta_l y_{l-1}^T$$
+- For some learning rate $\eta$  this finally yields:
+$$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l}$$
 
 <div align="center">
   <img src="/docs/figures/FA.png" alt="FA Neural Network" width="150"/>
@@ -58,11 +67,8 @@ $$\delta_l = \phi'(y_l)B_{l}\delta_{l+1}$$
   <em>Figure 1: Neural Network using FA. Taken from [5].</em>
 </div>
 
-The forward weights are then updated according to:
-$$\Delta W  = - \eta_W \delta_{l+1}y_l^T - \lambda W_{l+1}$$
-
 ### Code
-The code is contained in the [model.py](/bioflax/model.py) file. The functionality is implemented via a custom Flax linen module RandomDenseLinearFA. More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) function is defined that uses a standard Dense layer on the forward path but passes the error through the layer by multiplying with $B$ instead of $W$ on the backward path. Note that the way Flax works the nonlinearity is independent of the layer and hence will be handled by auto differentiation when composing the entire backward path. Overall, this extension perfectly integrates into the Flax framework.
+The code is in the [model.py](/bioflax/model.py) file. The functionality is implemented via a custom Flax linen module RandomDenseLinearFA. More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) function is defined that uses a standard Dense layer on the forward path but passes the error through the layer by multiplying with $B$ instead of $W$ on the backward path. Note that the way Flax works the nonlinearity is independent of the layer and hence will be handled by auto differentiation when composing the entire backward path. Overall, this extension perfectly integrates into the Flax framework.
 
 ## Kolen Pollack [6]
 ### Theory

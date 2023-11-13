@@ -8,6 +8,7 @@ from typing import Any
 class RandomDenseLinearFA(nn.Module):
     """
     Creates a linear layer which uses feedback alignment for the backward pass.
+    For detailed information please refer to https://github.com/yschimpf/bioflax/blob/main/docs/README.md#feedback-alignment-4
     ...
     Attributes
     __________
@@ -44,6 +45,7 @@ class RandomDenseLinearKP(nn.Module):
     """
     Creates a linear layer which uses feedback alignment for the backward pass and uses Kollen-Pollack 
     updates to align forward and backward matrices.
+    For more detailed information please refer to https://github.com/yschimpf/bioflax/blob/main/docs/README.md#kolen-pollack-6
     ...
     Attributes
     __________
@@ -79,6 +81,7 @@ class RandomDenseLinearKP(nn.Module):
 class RandomDenseLinearDFAOutput(nn.Module):
     """
     Creates an output linear layer which uses direct feedback alignment for the backward pass computations.
+    For more detailed information please refer to https://github.com/yschimpf/bioflax/blob/main/docs/README.md#direct-feedback-alignment-5
     ...
     Attributes
     __________
@@ -109,6 +112,7 @@ class RandomDenseLinearDFAOutput(nn.Module):
 class RandomDenseLinearDFAHidden(nn.Module):
     """
     Creates a hidden linear layer which uses direct feedback alignment for the backward pass.
+    For more detailed information please refer to https://github.com/yschimpf/bioflax/blob/main/docs/README.md#direct-feedback-alignment-5
     ...
     Attributes
     __________

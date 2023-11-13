@@ -97,7 +97,7 @@ The code is in the [model.py](/bioflax/model.py) file. The functionality is impl
 
 The direct feedback alignment algorithm decouples the feedforward and feedback path by using fixed random weights $B$ on the feedback path. The difference compared to FA is that the error is no longer backpropagated through all layers until it reaches a specific layer. Instead, it is directly propagated to the layer $l$ from the output layer via a single matrix $B_l$. This matrix obviously no longer has the dimension $W^T$ but its shape is defined by the dimension of the hidden layer and the output layer together. All update rules except for (2) stay the same as for BP and (2) becomes:
 $$\delta_l = \phi'(a_l) \odot B_{l}\delta_{L} \ \ \ (2.2)$$
-Note that the only difference compared to (2.1) for FA is that now all layers directly receive $\delta_L$, the error of the output layer, without it passing through all layers beforehand.
+Note that the only difference compared to (2.1) for FA is that now all layers directly receive $\delta_L$, the error of the output layer, without it passing through preceding layers beforehand.
 
 <div align="center">
   <img src="/docs/figures/DFA.png" alt="DFA Neural Network" width="150"/>

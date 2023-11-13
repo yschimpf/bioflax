@@ -20,7 +20,7 @@ Backpropagation [1], combined with stochastic gradient, is a powerful and widely
 
 The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule, where $\phi$ is a (mostly) non-linear activation function:
 $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
-The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation.
+The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation:
 $$\delta_l = \phi'(y_l)W_{l+1}^T\delta_{l+1}$$
 Using those $\delta$ updates for $W$ are computed on the fly:
 $$\frac{\partial L}{\partial W_l} = \delta_l y_{l-1}^T$$
@@ -52,7 +52,7 @@ The implemented algorithms are
 
 - The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according the following update rule:
   $$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})$$
-- The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ using $B$ instead of $W^T$
+- The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ using $B$ instead of $W^T$:
   $$\delta_l = \phi'(y_l)B_{l}\delta_{l+1}$$
 - Using those $\delta$ updates for $W$ are computed on the fly:
   $$\frac{\partial L}{\partial W_l} = \delta_l y_{l-1}^T$$

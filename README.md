@@ -8,9 +8,6 @@ Content:
 
 - [bioflax](#bioflax)
   - [Introduction](#introduction)
-  - [Implementation Overview](#implementation-overview)
-    - [Theory Overview](#theory-overview)
-    - [Code](#code)
   - [Requirements \& Installation](#requirements--installation)
   - [Data Download](#data-download)
   - [Repository structure](#repository-structure)
@@ -20,81 +17,15 @@ Content:
 
 ## Introduction
 
-Backpropagation [1], combined with stochastic gradient, is a powerful and widely used algorithm for learning via artificial neural networks. Yet, as pointed out quickly after its introduction, for several reasons it's not plausible for this algorithm to run in the brain in a similar fashion [2,3]. One of the most prominent issues is the so-called weight transport problem. 
+Bioflax provides an unofficial JAX implementation of biologically plausible deep learning algorithms. In particular, Feedback Alignment, Kolen-Pollack, and Direct Feedback alignment are implemented and a framework for running experiments with them is given. The code implemnts custom [Flax](https://flax.readthedocs.io/en/latest/quick_start.html) modules, which flawlessly integrate with the Flax framework.
 
-A typical deep-learning architecture works in two phases: The forward pass and the feedback path.
+The respective algorihms network structures are depicted in the following scheme. For a more detailed overview please refer to the [docs](/docs/README.md).
 
-The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he following update rule, where $\phi$ is a (mostly) non-linear activation function:
-$$y_{l+1} = \phi(W_{l+1}y_l+b_{l+1})\ \ \ (1)$$
-The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation:
-$$\delta_l = \phi'(y_l)W_{l+1}^T\delta_{l+1} \ \ \ (2)$$
-Using those $\delta$ updates for $W$ are computed on the fly:
-$$\frac{\partial L}{\partial W_l} = \delta_l y_{l-1}^T \ \ \ (3)$$
-For some learning rate $\eta$ this finally yields:
-$$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l} \ \ \ (4)$$
-A typical network chains together multiple such layers and schematically looks like this.
+| Backpropagation                                                       | Feedback Alignment & Kolen-Pollack                                    | Direct Feedback Alignment                                               |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| <img src="/docs/figures/BP.png" alt="BP Neural Network" width="150"/> | <img src="/docs/figures/FA.png" alt="FA Neural Network" width="150"/> | <img src="/docs/figures/DFA.png" alt="DFA Neural Network" width="150"/> |
 
-<div align="center">
-  <img src="/docs/figures/BP.png" alt="BP Neural Network" width="150"/>
-  <br>
-  <em>Figure 1: Neural Network using BP. Taken from [5].</em>
-</div>
-
-The weight transport problem stems from the fact, that the matrices $W_l$ appear on both the forward and the backward pass, and the required symmetry is unlikely to exist in the brain. That's because in the brain the synapses in the forward and feedback paths are physically distinct and there is no known way in which they could coordinate themselves to reflect the symmetry.
-
-## Implementation Overview
-
-The following algorithms for solving the weight transport problem are implemented:
-
-- Feedback Alignment (FA) [4]
-- Kolen Pollack (KP) [6]
-- Direct Feedback Alignment (DFA) [5]
-
-### Theory Overview
-
-How do these algorithms circumvent the weight transport problem? The key concept in each case is to decouple the forward pass from the backward pass by using fixed random weights for the backward pass.
-
-Feedback alignment and Kolen-Pollack both use the following structure:
-
-<div align="center">
-  <img src="/docs/figures/FA.png" alt="FA Neural Network" width="150"/>
-  <br>
-  <em>Figure 1: Neural Network using FA/KP. Taken from [5].</em>
-</div>
-
-For Feedback Alignment, all computations remain the same as for Backpropagation except for (2) which now uses the fixed backward weights $B$.
-$$\delta_l = \phi'(y_l)B_{l}\delta_{l+1} \ \ \ (2.1)$$
-The staggering result is that while $W$ and $B$ are initially uncorrelated, the network learns how to learn using these fixed feedback weights and achieves good optimization performance.
-
-For Kolen-Pollack this same modification is applied as well. Apart from that, weight updates are imposed on $B$. In carefully choosing them, Kolen-Pollack makes the $W$ and $B$ converge which ultimately speeds up the alignment of the gradients. In particular, the weight updates (3) and (4) now change to
-$$\frac{\partial L}{\partial W_l} = \delta_l y_{l-1}^T \ \ \ (3.1)$$
-$$\frac{\partial L}{\partial B_l} =  y_{l-1}\delta_l^T \ \ \ (3.2)$$
-$$W_l^{t+1}  = W_l^t - \eta_W^t\frac{\partial L}{\partial W_l^t} - \lambda W_{l}^t  \ \ \ (4.1)$$
-$$B_l^{t+1} = B_l^t - \eta_W^t \frac{\partial L}{\partial B_l^t} - \lambda B_{l}^t \ \ \ (4.2)$$
-Here $\eta_W$ is the learning rate and $\lambda$ is the weight decay. One can easily verify that
-$$W^t - {B^t}^T = (1-\lambda)^t[W^0-{B^0}^T] \ \ \ (5)$$
-Hence, as long as $0 < \lambda < 1$ $W$ and $B$ matrices will converge, and with them the respective gradients.
-
-Direct Feedback Alignment uses yet another network architecture:
-
-<div align="center">
-  <img src="/docs/figures/DFA.png" alt="DFA Neural Network" width="150"/>
-  <br>
-  <em>Figure 1: Neural Network using DFA. Taken from [5].</em>
-</div>
-
-Now errors are not backpropagated through all layers but only through one fixed random matrix $B$ er layer directly to that layer. All computations stay the same as for Feedback Alignment and only the meaning of $B$ in (2.1) changes.
-
-### Code
-
-The code is in the [model.py](/bioflax/model.py) file. The functionality is implemented via custom Flax linen modules for each algorithm:
-
-- RandomDenseLayerFA
-- RandomDenseLayerKP
-- RandomDenseLayerDFAOutput
-- RandomDenseLayerDFAHidden
-
-More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) is defined for each algorithm that on the forward pass uses a standard dense layer and on the backward pass uses the custom update rules as defined above. One technicality regarding the DFA layers is that, since the algorithm's nature is nothing like backpropagation anymore, tricks need to be applied which require the activation function to be specified as part of the layer and the layer to contain the final output dimensions. Another side product is the necessity to split the functionality into output and hidden layers for DFA. The tricks and the entire implementation for all modules serve the purpose of flawlessly integrating with the Flax framework. Modules can be used exactly like standard Flax modules in deep learning architectures.
+<em> Network architectures for different algorithms. Taken from [5]. </em>
 
 ## Requirements & Installation
 

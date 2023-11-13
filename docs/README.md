@@ -23,7 +23,7 @@ The forward pass generates outputs $h_{l+1}$ of layer $l+1$ given inputs $h_l$ a
 $$a_{l+1} = W_{l+1}h_l+b_{l+1} \ \ \ (1.1)$$
 $$h_{l+1} = \phi(a_{l+1}) \ \ \ (1.2)$$
 The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation:
-$$\delta_l = \phi'(a_l)W_{l+1}^T\delta_{l+1} \ \ \ (2)$$
+$$\delta_l = \phi'(a_l) \odot W_{l+1}^T\delta_{l+1} \ \ \ (2)$$
 Using those $\delta$, updates for $W$ are computed on the fly:
 $$\frac{\partial L}{\partial W_l} = \delta_l h_{l-1}^T \ \ \ (3)$$
 For some learning rate $\eta$, this finally yields:
@@ -51,7 +51,7 @@ The implemented algorithms are
 ### Theory
 
 The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that even though the forward and feedback weights are in expectation uncorrelated (in the beginning) the network essentially learns how to learn using the fixed random weights $B$. That's somewhat unintuitive because the gradients computed are not aligned with the true gradients (in the beginning). The explanation is that information about the backward weights $B$ flows into the forward weights W via the updates. This results in increasing alignment of the computed gradients with the true gradients. Concretely, the $\delta$ computation of BP, i.e. equation (2), is modified yielding:
-$$\delta_l = \phi'(a_l)B_{l}\delta_{l+1} \ \ \ (2.1)$$
+$$\delta_l = \phi'(a_l) \odot B_{l}\delta_{l+1} \ \ \ (2.1)$$
 
 The visual representation of the network hence becomes:
 
@@ -96,8 +96,8 @@ The code is in the [model.py](/bioflax/model.py) file. The functionality is impl
 ### Theory
 
 The direct feedback alignment algorithm decouples the feedforward and feedback path by using fixed random weights $B$ on the feedback path. The difference compared to FA is that the error is no longer backpropagated through all layers until it reaches a specific layer. Instead, it is directly propagated to the layer $l$ from the output layer via a single matrix $B_l$. This matrix obviously no longer has the dimension $W^T$ but its shape is defined by the dimension of the hidden layer and the output layer together. All update rules except for (2) stay the same as for BP and (2) becomes:
-$$\delta_l = \phi'(a_l)B_{l}\delta_{L} \ \ \ (2.2)$$
-Note that the only difference comared to (2.1) for FA is that now all layers directly receive $\delta_L$, the error of the output layer, without it passign through all layers beforehand.
+$$\delta_l = \phi'(a_l) \odot B_{l}\delta_{L} \ \ \ (2.2)$$
+Note that the only difference compared to (2.1) for FA is that now all layers directly receive $\delta_L$, the error of the output layer, without it passign through all layers beforehand.
 
 <div align="center">
   <img src="/docs/figures/DFA.png" alt="DFA Neural Network" width="150"/>
@@ -107,7 +107,7 @@ Note that the only difference comared to (2.1) for FA is that now all layers dir
 
 ### Code
 
-The code is contained in the [model.py](/bioflax/model.py) file. The functionality is implemented via two custom Flax linen modules RandomDenseLinearDFAOutput and RandomDenseLinearDFAHidden. More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) is defined in each to compute the correct updates. The modules are less generic compared to standard Flax linen modules because Flax is intedended for backpropagation like behaviour. However, in its nature DFA behaves differently as it doesn't propagate anything through layers but directly to the respective layers. To still make the layers integrate with the framework, the auto differentiation must be tricked in a more intriguing way. In the code, this is achieved by propagating the untouched output layer error directly to the next layer in the custom_vjp function. In doing so, every layer can apply its own matrix $B$ to that error. The remaining problem is that now the derivative of the activation should also no longer be applied on the path but layerwise. To circumvent this issue the activations are integrated into the layer. That way, they can be considered for the local computations but neglected for the global pass of the error. This is a little different compared to the separation of layer and activation as usual in Flax. Yet, once the layers are defined with this knowledge, all other features of the framework can flawlessly be used once again. In the output layer, no matrix $B$ must be applied to the error. This is done via defining a separate module for the output layer, but could be achieved by setting $B$ to the identity matrix of the correct dimension as well.
+The code is contained in the [model.py](/bioflax/model.py) file. The functionality is implemented via two custom Flax linen modules RandomDenseLinearDFAOutput and RandomDenseLinearDFAHidden. More specifically, a [custom_vjp](https://flax.readthedocs.io/en/latest/api_reference/flax.linen/_autosummary/flax.linen.custom_vjp.html) is defined in each to compute the correct updates. The modules are less generic compared to standard Flax linen modules because Flax is intedended for backpropagation like behaviour. However, in its nature, DFA behaves differently as it doesn't propagate anything through layers but directly to the respective layers. To still make the layers integrate with the framework, the auto differentiation must be tricked in a more intriguing way. In the code, this is achieved by propagating the untouched output layer error directly to the next layer in the custom_vjp function. In doing so, every layer can apply its own matrix $B$ to that error. The remaining problem is that now the derivative of the activation should also no longer be applied on the path but layerwise. To circumvent this issue the activations are integrated into the layer. That way, they can be considered for the local computations but neglected for the global pass of the error. This is a little different compared to the separation of layer and activation as usual in Flax. Yet, once the layers are defined with this knowledge, all other features of the framework can flawlessly be used once again. In the output layer, no matrix $B$ must be applied to the error. This is done via defining a separate module for the output layer, but could be achieved by setting $B$ to the identity matrix of the correct dimension as well.
 
 ## References
 

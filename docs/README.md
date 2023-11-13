@@ -77,7 +77,7 @@ $$W_l^{t+1}  = W_l^t - \eta_W^t\delta_l h_{l-1}^T - \lambda W_{l}^t \ \ \ (3.1)$
 $$B_l^{t+1} = B_l^t - \eta_W^t h_{l-1}\delta_l^T - \lambda B_{l}^t \ \ \ (3.2)$$
 Here $\eta_W$ is the learning rate and $\lambda$ is the weight decay. One can easily verify that
 $$W^t - {B^t}^T = (1-\lambda)^t[W^0-{B^0}^T] \ \ \ (5)$$
-where $B^t$ and $W^t$ refer to the respective matrix at step t. Hence, as long as $0 < \lambda < 1, $W$ and $B$ matrices will converge, and with them the respective gradients.
+where $B^t$ and $W^t$ refer to the respective matrix at step t. Hence, as long as $0 < \lambda < 1$, $W$ and $B$ matrices will converge, and with them the respective gradients.
 
 The visual representation of the network stays the same as for FA.
 

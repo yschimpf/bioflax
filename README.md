@@ -65,7 +65,7 @@ wandb/                       Local WandB log file
 
 ## Use layers
 
-Separately from the rest of the code, the Flax custom modules - the biological layer implementations respectively - can be used to define custom modules (Dense networks) that run with the respective deep learning algorithm. For example, a two-layer Dense network with sigmoid activation in the hidden layer for the available algorithms that perfectly integrates with the Flax framework can be created as follows:
+Separately from the rest of the code, the Flax custom modules - the biological layer implementations respectively - can be used to define custom modules (Dense networks) that run with the respective deep learning algorithm. For example, a two-layer Dense network with sigmoid activation in the hidden layer that perfectly integrates with the Flax framework can be created for each of the algorithms as follows:
 
 ```python
 import jax

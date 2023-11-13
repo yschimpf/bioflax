@@ -38,7 +38,7 @@ A typical network chains together multiple such layers and schematically looks l
 
 The weight transport problem stems from the fact that the matrices $W_l$ appear on both the forward and the backward pass, and the required symmetry is unlikely to exist in the brain. That's because in the brain the synapses in the forward and feedback paths are physically distinct and axons can only send information in one direction. Given these constraints, there is no known way in which this symmetry could be reflected.
 
-This repository provides JAX implementations of alternative algorithms that decouple forward and backward passes. The algorithms are implemented by extending [Flax](https://github.com/google/flax) modules and defining a custom backward pass. By doing so they can be integrated with other Flax modules and respective functionality flawlessly.
+This repository provides JAX implementations of biologically more plausible algorithms that decouple forward and backward passes. The algorithms are implemented by extending [Flax](https://github.com/google/flax) modules and defining a custom backward pass. By doing so they can be integrated with other Flax modules and respective functionality flawlessly.
 
 The implemented algorithms are
 

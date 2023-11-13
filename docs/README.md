@@ -27,7 +27,7 @@ $$\delta_l = \phi'(a_l) \odot W_{l+1}^T\delta_{l+1} \ \ \ (2)$$
 Using those $\delta$, updates for $W$ are computed on the fly:
 $$\frac{\partial L}{\partial W_l} = \delta_l h_{l-1}^T \ \ \ (3)$$
 For some learning rate $\eta$, this finally yields:
-$$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l} \ \ \ (4)$$
+$$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l^t} \ \ \ (4)$$
 A typical network chains together multiple such layers and schematically looks like this.
 
 <div align="center">

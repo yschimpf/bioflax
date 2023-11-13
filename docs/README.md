@@ -50,7 +50,7 @@ The implemented algorithms are
 
 ### Theory
 
-The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that even though the forward and feedback weights are in expectation uncorrelated (in the beginning) the network essentially learns how to learn using the fixed random weights $B$. That's somewhat unintuitive because the gradients computed are not aligned with the true gradients (in the beginning). The explanation is that information about the backward weights $B$ flows into the forward weights W via the updates. This results in increasing alignment of the computed gradients with the true gradients. Concretely, the $\delta$ computation of BP, i.e. equation (2), is modified yielding:
+The Feedback alignment algorithm decouples feedforward and feedback path by using fixed random weights $B$ on the feedback path. The staggering result is that, even though the forward and feedback weights are in expectation uncorrelated (in the beginning), the network essentially learns how to learn using the fixed random weights $B$. That's somewhat unintuitive because the gradients computed are not aligned with the true gradients (in the beginning). The explanation is that information about the backward weights $B$ flows into the forward weights W via the updates. This results in increasing alignment of the computed gradients with the true gradients. Concretely, the $\delta$ computation of BP, i.e. equation (2), is modified yielding:
 $$\delta_l = \phi'(a_l) \odot B_{l}\delta_{l+1} \ \ \ (2.1)$$
 
 The visual representation of the network hence becomes:

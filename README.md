@@ -15,9 +15,9 @@ Content:
 
 ## Introduction
 
-bioflax provides an unofficial JAX implementation of biologically plausible deep learning algorithms. In particular, Feedback Alignment, Kolen-Pollack, and Direct Feedback alignment are implemented and a framework for running experiments with them is given. The code implemnts custom [Flax](https://flax.readthedocs.io/en/latest/quick_start.html) modules, which flawlessly integrate with the Flax framework.
+Bioflax provides an unofficial JAX implementation of biologically plausible deep learning algorithms. In particular, Feedback Alignment, Kolen-Pollack, and Direct Feedback alignment are implemented and a framework for running experiments with them is given. The code implements custom [Flax](https://flax.readthedocs.io/en/latest/quick_start.html) modules, which flawlessly integrate with the Flax framework.
 
-The respective algorihms network structures are depicted in the following scheme. For a more detailed overview please refer to the [docs](/docs/README.md).
+The respective algorithms' network structures are depicted in the following scheme. For a more detailed overview please refer to the [docs](/docs/README.md).
 
 | Backpropagation                                                       | Feedback Alignment &<br> Kolen-Pollack                               | Direct Feedback Alignment                                               |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -114,7 +114,7 @@ To run an experiment simply execute
 python run_train.py
 ```
 
-which will result in a run with the default configuration. For information about the arguments and their default settings excute on of the following commands
+which will result in a run with the default configuration. For information about the arguments and their default settings execute on of the following commands
 
 ```
 python run_train.py --help

@@ -69,7 +69,7 @@ The code is in the [model.py](/bioflax/model.py) file. The functionality is impl
 
 ### Theory
 
-KP uses the exact same architecture as FA. While it is fascinating that with FA the network learns how to make use of the fixed feedback weights $B$, the obvious issue from an optimization point of view is that the gradients are not exact anymore. To alleviate this, Kolen Pollack uses a simple update rule which ensures that forward matrices $W$ and feedback matrices $B$ converge. By that gradient alignment is sped up compared to FA and ultimately reaches higher levels.
+KP uses the exact same architecture as FA. While it is fascinating that with FA the network learns how to make use of the fixed feedback weights $B$, the obvious issue from an optimization point of view is that the gradients are not exact anymore. To alleviate this, Kolen Pollack uses a simple update rule that ensures that forward matrices $W$ and feedback matrices $B$ converge. In doing so, gradient alignment is sped up compared to FA and ultimately reaches higher levels.
 
 The computations for forward and feedback paths remain the same as for FA. That is on the forward path (1.1) and (1.2) according to BP (and FA) are used and the backward path follows (2.1) from FA.
 The only difference compared to FA is that now the $B$ are updated as well and (3) from BP changes to:

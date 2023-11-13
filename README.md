@@ -11,7 +11,7 @@ Content:
   - [Repository structure](#repository-structure)
   - [Use layers](#use-layers)
   - [Run experiments](#run-experiments)
-  - [References](#references)
+  - [Usefull References](#usefull-references)
 
 ## Introduction
 
@@ -121,7 +121,7 @@ python run_train.py --help
 python run_train.py --h
 ```
 
-## References
+## Usefull References
 
 [1] David E. Rumelhart, Geoffrey E. Hinton, and Ronald J. Williams. Learning representations by back-propagating errors. Nature, 323(6088), 1986.
 

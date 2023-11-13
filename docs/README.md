@@ -20,12 +20,12 @@ Content:
 Backpropagation [1], combined with stochastic gradient, is a powerful and widely used algorithm for learning via artificial neural networks. Yet, as pointed out quickly after its introduction, for several reasons it's not plausible for this algorithm to run in the brain in a similar fashion [2,3]. One of the most prominent issues is the so-called weight transport problem. A typical deep-learning architecture works in two phases. Firstly, in the forward pass inputs are fed forward through the network from the input to the output layer along the forward path to produce an output. This output is compared to a target using a chosen loss function $L$ and the resulting error is passed back through the network in the backward pass from the output to the input layer along the feedback path. On the fly, the backward pass generates error signals for each layer to compute the parameter gradients that constitute the updates.
 
 The forward pass generates outputs $y_{l+1}$ of layer $l+1$ given inputs $y_l$ according he follwoing update rule, where $\phi$ is a (mostly) non-linear activation function:
-$$ a*{l+1} = W*{l+1}h*l+b*{l+1} \ \ \ (1.1)$$
-$$h*{l+1} = \phi(a*{l+1}) \ \ \ (1.2)$$
+$$ a_{l+1} = W_{l+1}h_l+b_{l+1} \ \ \ (1.1)$$
+$$h_{l+1} = \phi(a_{l+1}) \ \ \ (1.2)$$
 The backward pass feeds the error $\delta_{l+1}$ at layer $l+1$ back to layer $l$ to generate $\delta_l$ according to the backpropagation equation:
-$$\delta*l = \phi'(a_l)W*{l+1}^T\delta*{l+1} \ \ \ (2)$$
+$$\delta_l = \phi'(a_l)W_{l+1}^T\delta_{l+1} \ \ \ (2)$$
 Using those $\delta$, updates for $W$ are computed on the fly:
-$$\frac{\partial L}{\partial W_l} = \delta_l h*{l-1}^T \ \ \ (3)$$
+$$\frac{\partial L}{\partial W_l} = \delta_l h_{l-1}^T \ \ \ (3)$$
 For some learning rate $\eta$, this finally yields:
 $$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l} \ \ \ (4)$$
 A typical network chains together multiple such layers and schematically looks like this.

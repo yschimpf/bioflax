@@ -35,7 +35,7 @@ For dataloading PyTorch is needed. It has to be installed separately and more im
 
 ## Data Download
 
-In this first release, the code has built-in support to run experiments on the MNIST dataset, a teacher-student dataset, and a sin-regression dataset. None of these require explicit data download. MNIST will be downloaded automatically on execution and the teacher-student dataset as well as the sin-propagation dataset are created on the fly.
+In this first release, the code has built-in support to run experiments on the MNIST dataset, a teacher-student dataset, and a sin-regression dataset. None of these require explicit data download. MNIST will be downloaded automatically on execution and the teacher-student dataset as well as the sin-regression dataset are created on the fly.
 
 ## Repository structure
 

@@ -59,7 +59,7 @@ The implemented algorithms are
 - For some learning rate $\eta$ this finally yields:
   $$W_l^{t+1} = W_l^t - \eta\frac{\partial L}{\partial W_l}$$
 
-The visula representation of the network hence becomes:
+The visual representation of the network hence becomes:
 
 <div align="center">
   <img src="/docs/figures/FA.png" alt="FA Neural Network" width="150"/>
@@ -89,11 +89,11 @@ The computations for forward and feedback paths remain the same as for FA:
 - Forward weights $W$ and now also backward weights $B$ are updated according to:
   $$W_l^{t+1}  = W_l^t - \eta_W^t\frac{\partial L}{\partial W_l^t} - \lambda W_{l}^t$$
   $$B_l^{t+1} = B_l^t - \eta_W^t \frac{\partial L}{\partial B_l^t} - \lambda B_{l}^t$$
-  Here $\eta_W$ is the learning rate and $\lambda$ the weight decay. One can easily verify that
+  Here $\eta_W$ is the learning rate and $\lambda$ is the weight decay. One can easily verify that
   $$W^t - {B^t}^T = (1-\lambda)^t[W^0-{B^0}^T]$$
-  where $B(t)$ and $W(t)$ refers to the respective matrix at step t. Hence, as long as $0 < \lambda < 1$ $W$ and $B$ matrices will converge, and with them the respective gradients.
+  where $B^t$ and $W^t$ refer to the respective matrix at step t. Hence, as long as $0 < \lambda < 1$ $W$ and $B$ matrices will converge, and with them the respective gradients.
 
-The visual representation if the network stays the same as for FA.
+The visual representation of the network stays the same as for FA.
 
 <div align="center">
   <img src="/docs/figures/FA.png" alt="KP Neural Network" width="150"/>

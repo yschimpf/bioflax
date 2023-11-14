@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--use_wandb",
         type=str2bool,
-        default=False,
+        default=True,
         help="Enable/disable Weights & Biases for logging. Type: boolean, Default: True",
     )
     parser.add_argument(

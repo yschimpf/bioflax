@@ -108,20 +108,20 @@ If you need help on how to use modules for actual learning in Flax please refer 
 
 ## Run experiments
 
-To run an experiment simply execute
+To run an experiment execute
 
 ```
 python run_train.py
 ```
 
-which will result in a run with the default configuration. For information about the arguments and their default settings execute on of the following commands
+which will result in a run with the default configuration. For information about the arguments and their default settings execute one of the following commands
 
 ```
 python run_train.py --help
 python run_train.py --h
 ```
 
-## Usefull References
+## Useful References
 
 [1] David E. Rumelhart, Geoffrey E. Hinton, and Ronald J. Williams. Learning representations by back-propagating errors. Nature, 323(6088), 1986.
 

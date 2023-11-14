@@ -119,6 +119,12 @@ if __name__ == "__main__":
         help="Weights & Biases project name. Type: str, Default: 'bioflax'",
     )
     parser.add_argument(
+        "--wandb_entity",
+        type=str,
+        default="bioflax",
+        help="Weights & Biases entity name. Type: str, Default: 'bioflax'",
+    )
+    parser.add_argument(
         "--use_wandb",
         type=str2bool,
         default=False,

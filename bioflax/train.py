@@ -37,6 +37,7 @@ def train(args):
     project = args.wandb_project
     use_wandb = args.use_wandb
     n = args.n
+    entity = args.wandb_entity
 
     if dataset == "mnist":
         task = "classification"
@@ -55,6 +56,7 @@ def train(args):
             project=project,
             job_type="model_training",
             config=vars(args),
+            entity=entity,
         )
 
     # Set seed for randomness

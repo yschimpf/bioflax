@@ -457,7 +457,8 @@ class Test_RandomDenseLinearDFA(unittest.TestCase):
         Check whether hidden layer generates correct output
         y = xW + b
         """
-        model = RandomDenseLinearDFAHidden(10, 5, (lambda x: x))
+        model = RandomDenseLinearDFAHidden(
+            features=10, final_output_dim=5, activation=(lambda x: x))
         x = jnp.ones((1, 5))
         params = model.init(jax.random.PRNGKey(0), x)
         y = model.apply(params, x)
@@ -472,8 +473,9 @@ class Test_RandomDenseLinearDFA(unittest.TestCase):
         class MultiLayerModel(nn.Module):
             @nn.compact
             def __call__(self, x):
-                x = RandomDenseLinearDFAHidden(15, 10, (lambda x: x))(x)
-                x = RandomDenseLinearDFAOutput(10)(x)
+                x = RandomDenseLinearDFAHidden(
+                    features=15, final_output_dim=10, activation=(lambda x: x))(x)
+                x = RandomDenseLinearDFAOutput(features=10)(x)
                 return x
 
         model = MultiLayerModel()
@@ -495,8 +497,9 @@ class Test_RandomDenseLinearDFA(unittest.TestCase):
         class MultiLayerModel(nn.Module):
             @nn.compact
             def __call__(self, x):
-                x = RandomDenseLinearDFAHidden(15, 10, nn.sigmoid)(x)
-                x = RandomDenseLinearDFAOutput(10)(x)
+                x = RandomDenseLinearDFAHidden(
+                    features=15, final_output_dim=10, activation=nn.sigmoid)(x)
+                x = RandomDenseLinearDFAOutput(features=10)(x)
                 return x
 
         model = MultiLayerModel()
@@ -542,7 +545,8 @@ class Test_RandomDenseLinearDFA(unittest.TestCase):
             model(x) = xW + b; with feedback matrix B
         For equations that need to hold please refer to the inline comments.
         """
-        model = RandomDenseLinearDFAHidden(10, 10, (lambda x: x))
+        model = RandomDenseLinearDFAHidden(
+            features=10, final_output_dim=10, activation=(lambda x: x))
         x = jnp.ones((1, 5))
         params = model.init(jax.random.PRNGKey(0), x)
         y = model.apply(params, jnp.ones((1, 5)))
@@ -572,8 +576,9 @@ class Test_RandomDenseLinearDFA(unittest.TestCase):
         class MultiLayerModel(nn.Module):
             @nn.compact
             def __call__(self, x):
-                x = RandomDenseLinearDFAHidden(15, 10, (lambda x: x))(x)
-                x = RandomDenseLinearDFAOutput(10)(x)
+                x = RandomDenseLinearDFAHidden(
+                    features=15, final_output_dim=10, activation=(lambda x: x))(x)
+                x = RandomDenseLinearDFAOutput(features=10)(x)
                 return x
 
         model = MultiLayerModel()
@@ -617,9 +622,11 @@ class Test_RandomDenseLinearDFA(unittest.TestCase):
         class MultiLayerModel(nn.Module):
             @nn.compact
             def __call__(self, x):
-                x = RandomDenseLinearDFAHidden(20, 10, nn.sigmoid)(x)
-                x = RandomDenseLinearDFAHidden(15, 10, nn.sigmoid)(x)
-                x = RandomDenseLinearDFAOutput(10)(x)
+                x = RandomDenseLinearDFAHidden(
+                    features=20, final_output_dim=10, activation=nn.sigmoid)(x)
+                x = RandomDenseLinearDFAHidden(
+                    features=15, final_output_dim=10, activation=nn.sigmoid)(x)
+                x = RandomDenseLinearDFAOutput(features=10)(x)
                 return x
 
         model = MultiLayerModel()

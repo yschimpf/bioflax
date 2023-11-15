@@ -17,8 +17,8 @@ class RandomDenseLinearFA(nn.Module):
     """
 
     features: int
-    initializer_kernel: Any
-    initializer_B: Any
+    initializer_kernel: Any = nn.initializers.lecun_normal()
+    initializer_B: Any = nn.initializers.lecun_normal()
 
     @nn.compact
     def __call__(self, x):
@@ -59,8 +59,8 @@ class RandomDenseLinearKP(nn.Module):
     """
 
     features: int
-    initializer_kernel: Any
-    initializer_B: Any
+    initializer_kernel: Any = nn.initializers.lecun_normal()
+    initializer_B: Any = nn.initializers.lecun_normal()
 
     @nn.compact
     def __call__(self, x):
@@ -100,7 +100,7 @@ class RandomDenseLinearDFAOutput(nn.Module):
     """
 
     features: int
-    initializer_kernel: Any
+    initializer_kernel: Any = nn.initializers.lecun_normal()
 
     @nn.compact
     def __call__(self, x):
@@ -139,8 +139,8 @@ class RandomDenseLinearDFAHidden(nn.Module):
     """
     features: int
     final_output_dim: int
-    initializer_kernel: Any
-    initializer_B: Any
+    initializer_kernel: Any = nn.initializers.lecun_normal()
+    initializer_B: Any = nn.initializers.lecun_normal()
     activation: Any = nn.relu
 
     @nn.compact

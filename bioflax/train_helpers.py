@@ -405,11 +405,11 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task, output_feat
     plt.show()
 
 
-def select_initializer(initializer, a, b, scale):
+def select_initializer(initializer, scale):
     if (initializer == 'lecun'):
         return nn.initializers.lecun_normal()
     elif (initializer == 'uniform'):
-        return uniform_init(a, b)
+        return uniform_init(-scale, scale)
     elif (initializer == 'variance_scaling'):
         return nn.initializers.variance_scaling(scale=scale, mode="fan_in", distribution="normal")
     else:

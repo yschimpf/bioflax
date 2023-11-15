@@ -40,8 +40,6 @@ def train(args):
     entity = args.wandb_entity
     optimizer = args.optimizer
     initializer = args.initializer
-    w = args.w
-    b = args.b
     scale_w = args.scale_w
     scale_b = args.scale_b
 
@@ -98,8 +96,8 @@ def train(args):
         activations=activations,
         features=output_features,
         mode=mode,
-        initializer_kernel=select_initializer(initializer, -w, w, scale_w),
-        initializer_B=select_initializer(initializer, -b, b, scale_b),
+        initializer_kernel=select_initializer(initializer, scale_w),
+        initializer_B=select_initializer(initializer, scale_b),
     )
     state = create_train_state(
         model=model,
@@ -119,8 +117,8 @@ def train(args):
         activations=activations,
         features=output_features,
         mode="bp",
-        initializer_kernel=select_initializer(initializer, -w, w, scale_w),
-        initializer_B=select_initializer(initializer, -b, b, scale_b),
+        initializer_kernel=select_initializer(initializer, scale_w),
+        initializer_B=select_initializer(initializer, scale_b),
     )
     _ = create_train_state(
         model=bp_model,

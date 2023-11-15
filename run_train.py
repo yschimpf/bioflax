@@ -127,16 +127,10 @@ if __name__ == "__main__":
         default="lecun",
     )
     parser.add_argument(
-        "--w", type=float, default=0.5, help="kernel initialization range for uniform init. Type: float, Default: 1.0"
+        "--scale_w", type=float, default=1.0, help="Scaling factor for variance. Type: float, Default: 1.0"
     )
     parser.add_argument(
-        "--b", type=float, default=0.5, help="Bias initialization range for uniform init. Type: float, Default: 0.0"
-    )
-    parser.add_argument(
-        "--scale_w", type=float, default=1.0, help="Scaling factor for var_scaling init. Type: float, Default: 1.0"
-    )
-    parser.add_argument(
-        "--scale_b", type=float, default=1.0, help="Scaling factor for var_scaling init. Type: float, Default: 1.0"
+        "--scale_b", type=float, default=1.0, help="Scaling factor for variance. Type: float, Default: 1.0"
     )
 
     # Logging

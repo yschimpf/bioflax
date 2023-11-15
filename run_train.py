@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--initializer",
         type=str,
-        choices=["lecun", "uniform"],
+        choices=["lecun", "uniform", "variance_scaling"],
         default="lecun",
     )
     parser.add_argument(
@@ -131,6 +131,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--b", type=float, default=0.5, help="Bias initialization range for uniform init. Type: float, Default: 0.0"
+    )
+    parser.add_argument(
+        "--scale_w", type=float, default=1.0, help="Scaling factor for var_scaling init. Type: float, Default: 1.0"
+    )
+    parser.add_argument(
+        "--scale_b", type=float, default=1.0, help="Scaling factor for var_scaling init. Type: float, Default: 1.0"
     )
 
     # Logging

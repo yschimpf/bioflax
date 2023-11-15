@@ -2,7 +2,7 @@ import wandb
 from jax import random
 from typing import Any
 from .model import BatchBioNeuralNetwork
-from .train_helpers import create_train_state, train_epoch, validate, plot_sample
+from .train_helpers import create_train_state, train_epoch, validate, plot_sample, select_initializer
 from .dataloading import create_dataset
 
 
@@ -38,6 +38,10 @@ def train(args):
     use_wandb = args.use_wandb
     n = args.n
     entity = args.wandb_entity
+    optimizer = args.optimizer
+    initializer = args.initializer
+    w = args.w
+    b = args.b
 
     if dataset == "mnist":
         task = "classification"
@@ -92,6 +96,8 @@ def train(args):
         activations=activations,
         features=output_features,
         mode=mode,
+        initializer_kernel=select_initializer(initializer, -w, w),
+        initializer_B=select_initializer(initializer, -b, b),
     )
     state = create_train_state(
         model=model,
@@ -102,6 +108,7 @@ def train(args):
         in_dim=in_dim,
         batch_size=batch_size,
         seq_len=seq_len,
+        optimizer=optimizer
     )
 
     # Backpropagation model to compute alignments
@@ -110,6 +117,8 @@ def train(args):
         activations=activations,
         features=output_features,
         mode="bp",
+        initializer_kernel=select_initializer(initializer, -w, w),
+        initializer_B=select_initializer(initializer, -b, b),
     )
     _ = create_train_state(
         model=bp_model,
@@ -120,10 +129,12 @@ def train(args):
         in_dim=in_dim,
         batch_size=batch_size,
         seq_len=seq_len,
+        optimizer=optimizer
     )
 
     # Training loop over epochs
-    best_loss, best_acc, best_epoch = 100000000, -100000000.0, 0  # This best loss is val_loss
+    best_loss, best_acc, best_epoch = 100000000, - \
+        100000000.0, 0  # This best loss is val_loss
     for epoch in range(epochs):  # (args.epochs):
         print(f"[*] Starting training epoch {epoch + 1}...")
         (
@@ -138,10 +149,12 @@ def train(args):
 
         if valloader is not None:
             print(f"[*] Running Epoch {epoch + 1} Validation...")
-            val_loss, val_acc = validate(state, valloader, seq_len, in_dim, loss_fn)
+            val_loss, val_acc = validate(
+                state, valloader, seq_len, in_dim, loss_fn)
 
             print(f"[*] Running Epoch {epoch + 1} Test...")
-            test_loss, test_acc = validate(state, testloader, seq_len, in_dim, loss_fn)
+            test_loss, test_acc = validate(
+                state, testloader, seq_len, in_dim, loss_fn)
 
             print(f"\n=>> Epoch {epoch + 1} Metrics ===")
             print(
@@ -150,14 +163,17 @@ def train(args):
                 f"-- Test Loss: {test_loss:.5f}"
             )
             if task == "classification":
-                print(f"\tVal Accuracy: {val_acc:.4f} " f"-- Test Accuracy: {test_acc:.4f} ")
+                print(
+                    f"\tVal Accuracy: {val_acc:.4f} " f"-- Test Accuracy: {test_acc:.4f} ")
         else:
             # Use test set as validation set
             print(f"[*] Running Epoch {epoch + 1} Test...")
-            val_loss, val_acc = validate(state, testloader, seq_len, in_dim, loss_fn)
+            val_loss, val_acc = validate(
+                state, testloader, seq_len, in_dim, loss_fn)
 
             print(f"\n=>> Epoch {epoch + 1} Metrics ===")
-            print(f"\tTrain loss: {train_loss:.5f}" f"-- Test loss: {val_loss:.5f}")
+            print(
+                f"\tTrain loss: {train_loss:.5f}" f"-- Test loss: {val_loss:.5f}")
             if task == "classification":
                 print(f"-- Test accuracy: {val_acc:.4f}\n")
 

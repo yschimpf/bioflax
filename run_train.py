@@ -17,7 +17,8 @@ def str2bool(v):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser = argparse.ArgumentParser(description="Parse command-line arguments for model training.")
+    parser = argparse.ArgumentParser(
+        description="Parse command-line arguments for model training.")
 
     parser.add_argument(
         "--jax_seed", type=int, default=0, help="Seed for JAX RNG. Type: int, Default: 0"
@@ -110,6 +111,27 @@ if __name__ == "__main__":
         default=0,
         help="Weight decay for learning. Type: float, Default: 0.",
     )
+    parser.add_argument(
+        "--optimizer",
+        type=str,
+        default="sgd",
+        choices=["sgd", "adam"],
+        help="Optimizer. Choices: ['sgd', 'adam']. Type: str, Default: 'sgd'",
+    )
+
+    # Initializer
+    parser.add_argument(
+        "--initializer",
+        type=str,
+        choices=["lecun", "uniform"],
+        default="lecun",
+    )
+    parser.add_argument(
+        "--w", type=float, default=0.5, help="kernel initialization range for uniform init. Type: float, Default: 1.0"
+    )
+    parser.add_argument(
+        "--b", type=float, default=0.5, help="Bias initialization range for uniform init. Type: float, Default: 0.0"
+    )
 
     # Logging
     parser.add_argument(
@@ -145,6 +167,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--n", type=int, default=5, help="Batches for alignment averaging. Type: int, Default: 5"
     )
+
     args = parser.parse_args()
 
     train(args)

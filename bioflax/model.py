@@ -17,10 +17,12 @@ class RandomDenseLinearFA(nn.Module):
     """
 
     features: int
+    initializer_kernel: Any
+    initializer_B: Any
 
     @nn.compact
     def __call__(self, x):
-        B = self.param("B", nn.initializers.lecun_normal(),
+        B = self.param("B", self.initializer_B,
                        (jnp.shape(x)[-1], self.features))
 
         def f(module, x, B):
@@ -36,7 +38,8 @@ class RandomDenseLinearFA(nn.Module):
             delta_x = (B @ delta.transpose()).transpose()
             return (delta_params, delta_x, jnp.zeros_like(B))
 
-        forward_module = nn.Dense(self.features)
+        forward_module = nn.Dense(
+            self.features, kernel_init=self.initializer_kernel)
         custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x, B)
 
@@ -51,13 +54,17 @@ class RandomDenseLinearKP(nn.Module):
     __________
     features : int
         number of output features
+    initializer : Any
+        initializer for matrices
     """
 
     features: int
+    initializer_kernel: Any
+    initializer_B: Any
 
     @nn.compact
     def __call__(self, x):
-        B = self.param("B", nn.initializers.lecun_normal(),
+        B = self.param("B", self.initializer_B,
                        (jnp.shape(x)[-1], self.features))
 
         def f(module, x, B):
@@ -73,7 +80,8 @@ class RandomDenseLinearKP(nn.Module):
             delta_x = (B @ delta.transpose()).transpose()
             return (delta_params, delta_x, delta_params["params"]["kernel"])
 
-        forward_module = nn.Dense(self.features)
+        forward_module = nn.Dense(
+            self.features, kernel_init=self.initializer_kernel)
         custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x, B)
 
@@ -87,9 +95,12 @@ class RandomDenseLinearDFAOutput(nn.Module):
     __________
     features : int
         number of output features
+    initializer : Any
+        initializer for matrices
     """
 
     features: int
+    initializer_kernel: Any
 
     @nn.compact
     def __call__(self, x):
@@ -104,7 +115,8 @@ class RandomDenseLinearDFAOutput(nn.Module):
             delta_params, _ = vjp_fn(delta)
             return (delta_params, delta)
 
-        forward_module = nn.Dense(self.features)
+        forward_module = nn.Dense(
+            self.features, kernel_init=self.initializer_kernel)
         custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x)
 
@@ -122,14 +134,18 @@ class RandomDenseLinearDFAHidden(nn.Module):
         number of output features of the output layer
     activation : Any = nn.relu
         activation function applied to the weighted inputs of the layer
+    initializer : Any   
+        initializer for matrices
     """
     features: int
     final_output_dim: int
+    initializer_kernel: Any
+    initializer_B: Any
     activation: Any = nn.relu
 
     @nn.compact
     def __call__(self, x):
-        B = self.param("B", nn.initializers.lecun_normal(),
+        B = self.param("B", self.initializer_B,
                        (self.features, self.final_output_dim))
 
         def f(module, x, B):
@@ -144,7 +160,8 @@ class RandomDenseLinearDFAHidden(nn.Module):
             delta_params, _, _ = vjp_fn((B @ delta.transpose()).transpose())
             return (delta_params, delta, jnp.zeros_like(B))
 
-        forward_module = nn.Dense(self.features)
+        forward_module = nn.Dense(
+            self.features, kernel_init=self.initializer_kernel)
         custom_f = nn.custom_vjp(fn=f, forward_fn=fwd, backward_fn=bwd)
         return custom_f(forward_module, x, B)
 
@@ -168,6 +185,8 @@ class BioNeuralNetwork(nn.Module):
 
     hidden_layers: [int]
     activations: [str]
+    initializer_kernel: Any = nn.initializers.lecun_normal()
+    initializer_B: Any = nn.initializers.lecun_normal()
     features: int = 4
     mode: str = "bp"
 
@@ -176,25 +195,30 @@ class BioNeuralNetwork(nn.Module):
     def __call__(self, x):
         for features, activation in zip(self.hidden_layers, self.activations):
             if self.mode == "bp":
-                x = nn.Dense(features)(x)
+                x = nn.Dense(features, kernel_init=self.initializer_kernel)(x)
                 x = getattr(nn, activation)(x)
             elif self.mode == "fa":
-                x = RandomDenseLinearFA(features)(x)
+                x = RandomDenseLinearFA(
+                    features, self.initializer_kernel, self.initializer_B)(x)
                 x = getattr(nn, activation)(x)
             elif self.mode == "dfa":
                 x = RandomDenseLinearDFAHidden(
-                    features, self.features, getattr(nn, activation))(x)
+                    features, self.features, self.initializer_kernel, self.initializer_B, getattr(nn, activation))(x)
             elif self.mode == "kp":
-                x = RandomDenseLinearKP(features)(x)
+                x = RandomDenseLinearKP(
+                    features, self.initializer_kernel, self.initializer_B)(x)
                 x = getattr(nn, activation)(x)
         if self.mode == "bp":
-            x = nn.Dense(self.features)(x)
+            x = nn.Dense(self.features, kernel_init=self.initializer_kernel)(x)
         elif self.mode == "fa":
-            x = RandomDenseLinearFA(self.features)(x)
+            x = RandomDenseLinearFA(
+                self.features, self.initializer_kernel, self.initializer_B)(x)
         elif self.mode == "dfa":
-            x = RandomDenseLinearDFAOutput(self.features)(x)
+            x = RandomDenseLinearDFAOutput(
+                self.features, self.initializer_kernel)(x)
         elif self.mode == "kp":
-            x = RandomDenseLinearKP(self.features)(x)
+            x = RandomDenseLinearKP(
+                self.features, self.initializer_kernel, self.initializer_B)(x)
         return x
 
 

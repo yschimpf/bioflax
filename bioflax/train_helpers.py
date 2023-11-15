@@ -15,7 +15,7 @@ from functools import partial
 from .metric_computation import compute_metrics, summarize_metrics_epoch, reorganize_dict
 
 
-def create_train_state(model, rng, lr, momentum, weight_decay, in_dim, batch_size, seq_len):
+def create_train_state(model, rng, lr, momentum, weight_decay, in_dim, batch_size, seq_len, optimizer):
     """
     Initializes the training state using optax
     ...
@@ -39,7 +39,24 @@ def create_train_state(model, rng, lr, momentum, weight_decay, in_dim, batch_siz
     dummy_input = jnp.ones((batch_size, in_dim, seq_len))
     params = model.init(rng, dummy_input)["params"]
     sgd_optimizer = optax.sgd(learning_rate=lr, momentum=momentum)
-    tx = optax.chain(optax.add_decayed_weights(weight_decay), sgd_optimizer)
+    sgd_optimizer = optax.sgd(learning_rate=lr, momentum=momentum)
+    adam = optax.adam(learning_rate=lr)
+    if (optimizer == 'sgd'):
+        tx = optax.chain(
+            sgd_optimizer,
+            optax.add_decayed_weights(weight_decay)
+        )
+    elif (optimizer == 'adam'):
+        tx = optax.chain(
+            adam,
+            optax.add_decayed_weights(weight_decay)
+        )
+    else:
+        print("Optimzer not supported, fallback sgd was used")
+        tx = optax.chain(
+            sgd_optimizer,
+            optax.add_decayed_weights(weight_decay)
+        )
     return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 
@@ -386,3 +403,19 @@ def plot_regression_sample(testloader, state, seq_len, in_dim, task, output_feat
     plt.scatter(inputs_array.flatten(), labels_array.flatten(), label="True")
     plt.scatter(inputs_array.flatten(), pred_array.flatten(), label="Pred")
     plt.show()
+
+
+def select_initializer(initializer, a, b):
+    if (initializer == 'lecun'):
+        return nn.initializers.lecun_normal()
+    elif (initializer == 'uniform'):
+        return uniform_init(a, b)
+    else:
+        print("Initializer not supported. Lecun used as fallback")
+        return nn.initializers.lecun_normal()
+
+
+def uniform_init(a, b):
+    def init_func(rng, shape, dtype=jnp.float32):
+        return jax.random.uniform(rng, shape, dtype, minval=a, maxval=b)
+    return init_func

@@ -19,7 +19,7 @@ Bioflax provides an unofficial JAX implementation of biologically plausible deep
 
 The respective algorithms' network structures are depicted in the following scheme. For a more detailed overview please refer to the [docs](/docs/README.md).
 
-| Backpropagation                                                       | Feedback Alignment &<br> Kolen-Pollack                               | Direct Feedback Alignment                                               |
+| Backpropagation                                                       | Feedback Alignment &<br> Kolen-Pollack                               | Direct Feedback <br> Alignment                                               |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | <img src="/docs/figures/BP.png" alt="BP Neural Network" width="105"/> | <img src="/docs/figures/FA.png" alt="FA Neural Network" width="95"/> | <img src="/docs/figures/DFA.png" alt="DFA Neural Network" width="100"/> |
 

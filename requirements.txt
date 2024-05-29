@@ -1,5 +1,6 @@
 flax==0.7.5
 jax==0.4.20
+jaxlib==0.4.20
 matplotlib==3.8.1
 numpy==1.26.1
 optax==0.1.7
